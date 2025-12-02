@@ -40,18 +40,22 @@ Supercharge your Chrome browser with intelligent automation powered by ChatGPT a
 
 ### 📊 Logging & Analytics
 - ✅ Automatic logging of all generations
-- ✅ Export/Import settings as JSON
-- ✅ Export generation logs
+- ✅ **Dynamic Export/Import** - all storage keys automatically included
+- ✅ **Future-proof** - new settings exported without code changes
+- ✅ Export generation logs with full details
 - ✅ Live statistics (success rate, average time)
+- ✅ **Accordion UI** for better settings organization
 
 ### 🛠️ Technical
 - ✅ TypeScript with SOLID principles
 - ✅ Modular architecture (FreelancerMap, Kleinanzeigen, Shared)
 - ✅ Webpack for optimal bundling
-- ✅ Automatic versioning (patch increment)
+- ✅ Automatic versioning (patch increment on build)
 - ✅ Chrome Storage API for settings
+- ✅ **Dynamic export/import** (future-proof)
 - ✅ Comprehensive error handling
 - ✅ MutationObserver for dynamic content
+- ✅ **Accordion UI** for better UX
 
 ---
 
@@ -99,13 +103,18 @@ The extension is ready in the `dist` folder for distribution.
 
 ### 1. Configuration
 
-#### Setup AI Provider:
+The popup uses an **accordion UI** to organize settings by platform:
+
+#### 💼 FreelancerMap Einstellungen (Accordion)
+
+**Setup AI Provider:**
 1. Click the extension icon in Chrome toolbar
-2. **Select provider tab** (ChatGPT or Claude)
-3. Enter your API key
-4. Click **"Validate"** to test the key
-5. Select desired **model** from dropdown
-6. Click **"Save"**
+2. Expand **"FreelancerMap Einstellungen"** accordion (open by default)
+3. **Select provider tab** (ChatGPT or Claude)
+4. Enter your API key
+5. Click **"Validate"** to test the key
+6. Select desired **model** from dropdown
+7. Click **"Save"**
 
 **Important:** The **active provider** (shown top right as "Active: ...") switches only after **saving**!
 
@@ -125,7 +134,16 @@ The extension is ready in the `dist` folder for distribution.
      - Links to your projects
      - Will be inserted before closing
 
-#### Setup Seller Settings (for Kleinanzeigen):
+#### 🛒 Kleinanzeigen Einstellungen (Accordion)
+
+**Setup Purchase Settings:**
+1. Expand **"Kleinanzeigen Einstellungen"** accordion
+2. Configure discount:
+   - **Discount Type:** Percentage (%) or Fixed Amount (€)
+   - **Discount Value:** Default 15%
+   - **Custom Message Template** (optional)
+
+**Setup Seller Settings (for Listing Optimization):**
 1. Fill in seller information:
    - **Name** (required)
    - **Street & Number**
@@ -136,12 +154,6 @@ The extension is ready in the `dist` folder for distribution.
      - ☑️ Pickup available
      - ☑️ Shipping available (with optional cost)
    - **Warranty Disclaimer** (enabled by default)
-
-#### Setup Kleinanzeigen Purchase Settings:
-1. Configure discount:
-   - **Discount Type:** Percentage (%) or Fixed Amount (€)
-   - **Discount Value:** Default 15%
-   - **Custom Message Template** (optional)
 
 ---
 
@@ -269,22 +281,51 @@ Rücknahme anbieten.
 
 ## 📊 Export & Import
 
-### Export Settings
+### Export Settings (v2.0 - Future-Proof)
 1. Click extension icon
 2. Scroll to bottom
-3. Click **"Export"** button
+3. Click **"Einstellungen exportieren"** button
 4. Save JSON file
+
+**What's exported:**
+- ✅ **All storage keys dynamically** (no manual updates needed)
+- ✅ API configuration (both ChatGPT and Claude)
+- ✅ User profile (FreelancerMap)
+- ✅ Kleinanzeigen settings (discount, message template)
+- ✅ Seller settings (name, address, shipping)
+- ✅ **Future settings automatically included** (custom prompts, themes, etc.)
+
+**Export format v2.0:**
+```json
+{
+  "version": "2.0",
+  "exportDate": "2025-12-02T10:30:00.000Z",
+  "extensionVersion": "0.0.79",
+  "storageKeys": ["api_config", "user_profile", "kleinanzeigen_settings", ...],
+  "data": {
+    "api_config": { ... },
+    "user_profile": { ... },
+    "kleinanzeigen_settings": { ... },
+    "seller_settings": { ... }
+  }
+}
+```
 
 ### Import Settings
 1. Click extension icon
 2. Scroll to bottom
-3. Click **"Import"** button
+3. Click **"Einstellungen importieren"** button
 4. Select JSON file
+5. Confirm import dialog (shows number of keys)
+
+**Supports:**
+- ✅ **v2.0 format** (dynamic, all keys)
+- ✅ **v1.0 format** (legacy, backward compatible)
 
 ### Export Logs
 1. Click extension icon
-2. Scroll to "Generation Logs"
-3. Click **"Export Logs"** button
+2. Scroll to "Generierungs-Logs"
+3. Click **"Logs exportieren"** button
 4. Save JSON file with all generation data
 
 ---
