@@ -121,33 +121,79 @@ class ApplyAIAssistant {
       e.preventDefault();
       e.stopPropagation();
       
+      Logger.info('Floating Button geklickt - öffne Modal');
+      
+      // Zeige Loading-State
+      const originalHTML = floatingButton.innerHTML;
+      floatingButton.innerHTML = `
+        <i class="far fa-spinner fa-spin"></i>
+        <span>Öffne Modal...</span>
+      `;
+      floatingButton.style.pointerEvents = 'none';
+      
       // Klicke auf "Bewerben" Button um Modal zu öffnen
       const contactButton = document.querySelector('[data-testid="contact-button"]') as HTMLElement;
-      if (contactButton) {
-        contactButton.click();
-        
-        // Warte bis Modal geöffnet ist und füge Button hinzu
-        const checkModal = setInterval(() => {
-          const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
-          const coverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
-          
-          if (modal && coverLetterField && modal.contains(coverLetterField)) {
-            clearInterval(checkModal);
-            
-            // Warte kurz bis Modal vollständig geladen ist
-            setTimeout(() => {
-              const modalApplyAIButton = document.getElementById('apply-ai-generate-btn');
-              if (modalApplyAIButton) {
-                // Klicke auf ApplyAI Button im Modal
-                (modalApplyAIButton as HTMLElement).click();
-              }
-            }, 500);
-          }
-        }, 100);
-        
-        // Timeout nach 5 Sekunden
-        setTimeout(() => clearInterval(checkModal), 5000);
+      if (!contactButton) {
+        Logger.error('Bewerben-Button nicht gefunden');
+        floatingButton.innerHTML = originalHTML;
+        floatingButton.style.pointerEvents = 'auto';
+        return;
       }
+      
+      contactButton.click();
+      Logger.info('Bewerben-Button geklickt');
+      
+      // Warte bis Modal geöffnet ist
+      let attempts = 0;
+      const maxAttempts = 50; // 5 Sekunden
+      
+      const checkModal = setInterval(async () => {
+        attempts++;
+        
+        const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
+        const coverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
+        
+        if (modal && coverLetterField && modal.contains(coverLetterField)) {
+          clearInterval(checkModal);
+          Logger.info('Modal geöffnet, starte Generierung');
+          
+          // Warte kurz bis Modal vollständig geladen ist
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // Prüfe ob ApplyAI Button im Modal existiert
+          const modalApplyAIButton = document.getElementById('apply-ai-generate-btn');
+          if (modalApplyAIButton) {
+            Logger.info('Klicke auf ApplyAI Button im Modal');
+            (modalApplyAIButton as HTMLElement).click();
+          } else {
+            Logger.warn('ApplyAI Button im Modal nicht gefunden, starte direkt Generierung');
+            // Direkt generieren falls Button nicht existiert
+            try {
+              const controller = new ApplicationController();
+              await controller.generateAndInsertApplication();
+              Logger.info('Generierung erfolgreich');
+            } catch (error) {
+              Logger.error('Generierung fehlgeschlagen:', error);
+            }
+          }
+          
+          // Reset Button
+          floatingButton.innerHTML = originalHTML;
+          floatingButton.style.pointerEvents = 'auto';
+          
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkModal);
+          Logger.error('Timeout: Modal konnte nicht geöffnet werden');
+          floatingButton.innerHTML = `
+            <i class="far fa-exclamation-triangle"></i>
+            <span>Fehler</span>
+          `;
+          setTimeout(() => {
+            floatingButton.innerHTML = originalHTML;
+            floatingButton.style.pointerEvents = 'auto';
+          }, 3000);
+        }
+      }, 100);
     });
 
     // Füge Button direkt zu body hinzu (außerhalb React-Baum)
