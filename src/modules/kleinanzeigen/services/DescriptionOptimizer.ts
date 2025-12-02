@@ -71,6 +71,11 @@ export class DescriptionOptimizer {
     const attributesInfo = this.buildAttributesInfo(adData);
     const priceInfo = this.buildPriceInfo(adData);
     const adTypeText = adData.adType === 'WANTED' ? 'SUCHE' : 'BIETE';
+    
+    // Formatiere Zustand für Beispiel-Struktur
+    const zustandFormatted = adData.attributes?.zustand 
+      ? this.formatZustandForSentence(adData.attributes.zustand)
+      : '';
 
     return `# AUFGABE: Optimiere diese Kleinanzeigen-Beschreibung
 
@@ -116,16 +121,26 @@ ${warrantyDisclaimer ? '5. **Rechtlicher Hinweis**: ' + warrantyDisclaimer : ''}
 - Keine Übertreibungen
 - ${adData.adType === 'WANTED' ? 'Klar formulieren was du suchst' : 'Verkaufsfördernde Sprache'}
 
+### WICHTIG: Zustand grammatikalisch korrekt formulieren!
+❌ FALSCH: "Verkaufe Fahrrad in Sehr Gut"
+✅ RICHTIG: "Verkaufe Fahrrad in sehr gutem Zustand" oder "Verkaufe Fahrrad (Zustand: Sehr Gut)"
+- Wenn Zustand in der Einleitung: Verwende "in [kleingeschrieben]em Zustand" (z.B. "in sehr gutem Zustand", "in gutem Zustand")
+- Oder: Formuliere natürlich, z.B. "in sehr gutem Zustand" statt "in Sehr Gut"
+- Der Zustand kann auch in den Details-Bulletpoints stehen: "• Zustand: Sehr Gut"
+
 ### Was MUSS enthalten sein:
+- **PREIS** (${adData.price > 0 ? `${adData.price}€` : 'Zu verschenken'}) - IMMER in der Beschreibung erwähnen!
+- **Preistyp** - Wiederhole ob Festpreis oder VB (Verhandlungsbasis) - z.B. "Preis: 333€ (VB)" oder "Festpreis: 333€"
 - Alle wichtigen Details aus der Original-Beschreibung
 - **Alle Attribut-Informationen** (${Object.keys(adData.attributes || {}).join(', ') || 'falls vorhanden'})
-- Zustand (${adData.attributes?.zustand || 'neu/gebraucht/defekt'})
+- Zustand (${adData.attributes?.zustand || 'neu/gebraucht/defekt'}) - GRAMMATIKALISCH KORREKT formuliert!
 - Versand-Info (${adData.attributes?.versand || 'Abholung/Versand'})
 ${warrantyDisclaimer ? '- Gewährleistungsausschluss' : ''}
 ${adData.buyNowEnabled ? '- Hinweis auf "Direkt kaufen" Funktion' : ''}
 
 ### Was VERMEIDEN:
 - Rechtschreibfehler
+- Grammatikfehler (besonders bei Zustand: "in Sehr Gut" ist FALSCH!)
 - Zu lange Sätze
 - Wiederholungen
 - Unnötige Füllwörter
@@ -134,10 +149,11 @@ ${adData.buyNowEnabled ? '- Hinweis auf "Direkt kaufen" Funktion' : ''}
 
 ## BEISPIEL-STRUKTUR:
 
-${adData.adType === 'WANTED' ? 'Suche' : 'Verkaufe'} [Artikel]${adData.attributes?.zustand ? ` in ${adData.attributes.zustand}` : ''}. [1-2 Sätze Highlights].
+${adData.adType === 'WANTED' ? 'Suche' : 'Verkaufe'} [Artikel]${zustandFormatted ? ` in ${zustandFormatted}` : ''}. [1-2 Sätze Highlights].
 
 Details:
 ${attributesInfo ? attributesInfo.split('\n').map(line => `• ${line.replace('**', '').replace(':', '')}`).join('\n') : '• [Eigenschaft 1]\n• [Eigenschaft 2]\n• [Eigenschaft 3]'}
+• Preis: ${adData.price > 0 ? `${adData.price}€ (${adData.priceType === 'NEGOTIABLE' ? 'VB' : 'Festpreis'})` : 'Zu verschenken'}
 • [Weitere Details aus Beschreibung]
 
 ${shippingInfo}
@@ -150,7 +166,41 @@ ${warrantyDisclaimer}
 ## AUSGABE
 Gib NUR die optimierte Beschreibung aus, ohne Kommentare oder Erklärungen.
 Maximal 4000 Zeichen.
-Nutze ALLE verfügbaren Informationen (Attribute, Zustand, Versand, etc.).`;
+Nutze ALLE verfügbaren Informationen (Attribute, Zustand, Versand, etc.).
+
+## QUALITÄTSKONTROLLE (VOR AUSGABE):
+✓ Prüfe Grammatik: "in Sehr Gut" → "in sehr gutem Zustand" oder "Zustand: Sehr Gut"
+✓ Prüfe Rechtschreibung
+✓ Prüfe dass alle Attribute korrekt verwendet wurden
+✓ Prüfe dass der Text natürlich klingt und nicht gestelzt wirkt
+✓ Prüfe dass der Zustand immer grammatikalisch korrekt formuliert ist`;
+  }
+
+  /**
+   * Formatiert Zustand für grammatikalisch korrekte Verwendung in Sätzen
+   */
+  private static formatZustandForSentence(zustand: string): string {
+    const zustandLower = zustand.toLowerCase();
+    
+    // Mapping für häufige Zustände
+    const zustandMap: Record<string, string> = {
+      'neu': 'neuem',
+      'wie neu': 'wie neuem',
+      'sehr gut': 'sehr gutem',
+      'gut': 'gutem',
+      'in ordnung': 'in Ordnung',
+      'akzeptabel': 'akzeptablem',
+      'defekt': 'defektem',
+      'beschädigt': 'beschädigtem'
+    };
+
+    // Prüfe ob exakte Übereinstimmung
+    if (zustandMap[zustandLower]) {
+      return zustandMap[zustandLower] + ' Zustand';
+    }
+
+    // Fallback: Kleinschreibung + "em Zustand"
+    return zustandLower + 'em Zustand';
   }
 
   /**

@@ -221,11 +221,13 @@ Viele Grüße
 
 **AI will include:**
 - ✅ All form attributes (type, condition, shipping, etc.)
+- ✅ **Price information** - always mentions price and whether it's fixed price or negotiable (VB)
 - ✅ Professional structure
 - ✅ Seller information (location, shipping options)
 - ✅ Warranty disclaimer (if enabled)
 - ✅ "Direct Buy" mention (if enabled)
 - ✅ Selling tips for better conversion
+- ✅ **Grammar-checked** - ensures correct German grammar (e.g., "in sehr gutem Zustand" instead of "in Sehr Gut")
 
 **Example Optimized Description:**
 ```
@@ -236,6 +238,7 @@ Details:
 • Art: Damen
 • Typ: Mountainbike
 • Zustand: Sehr Gut - kaum Gebrauchsspuren
+• Preis: 333€ (VB)
 • Rahmenhöhe: 48cm
 • 21-Gang Shimano Schaltung
 
@@ -248,6 +251,10 @@ Bei Interesse einfach melden!
 Da ich privat verkaufe, kann ich leider keine Garantie oder 
 Rücknahme anbieten.
 ```
+
+**Error Handling:**
+- ✅ **Toast notifications** - Shows specific error messages (e.g., "Produktbeschreibung fehlt", "Verkäufer-Name fehlt")
+- ✅ Clear error messages help you fix issues quickly
 
 ---
 

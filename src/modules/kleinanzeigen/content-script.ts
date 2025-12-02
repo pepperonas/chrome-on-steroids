@@ -17,6 +17,80 @@ class KleinanzeigenContentScript {
   constructor() {
     Logger.info('[Kleinanzeigen] Content Script initialized');
     this.init();
+    this.injectToastStyles();
+  }
+
+  /**
+   * Zeigt eine Toast-Benachrichtigung an
+   */
+  private showToast(message: string, type: 'success' | 'error' = 'error'): void {
+    // Entferne vorhandene Toasts
+    const existingToasts = document.querySelectorAll('.cos-toast');
+    existingToasts.forEach(toast => toast.remove());
+
+    // Erstelle Toast
+    const toast = document.createElement('div');
+    toast.className = `cos-toast cos-toast-${type}`;
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+
+    // Zeige Toast
+    setTimeout(() => {
+      toast.classList.add('cos-toast-show');
+    }, 10);
+
+    // Entferne Toast nach 5 Sekunden
+    setTimeout(() => {
+      toast.classList.remove('cos-toast-show');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 5000);
+  }
+
+  /**
+   * Injiziert Toast-Styles
+   */
+  private injectToastStyles(): void {
+    if (document.getElementById('cos-toast-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'cos-toast-styles';
+    style.textContent = `
+      .cos-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #2C2E3B;
+        color: #FFFFFF;
+        padding: 16px 24px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 100000;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        max-width: 400px;
+        opacity: 0;
+        transform: translateX(400px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-left: 4px solid;
+      }
+      .cos-toast-show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      .cos-toast-error {
+        border-left-color: #f44336;
+        background: #2C2E3B;
+      }
+      .cos-toast-success {
+        border-left-color: #4caf50;
+        background: #2C2E3B;
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   private init(): void {
@@ -390,16 +464,25 @@ class KleinanzeigenContentScript {
 
       // Extrahiere Inserat-Daten
       const adData = KleinanzeigenDOMService.extractAdDataFromForm();
-      if (!adData || !adData.description) {
-        throw new Error('Bitte fülle zuerst Titel und Beschreibung aus.');
+      if (!adData) {
+        throw new Error('Produktdaten konnten nicht extrahiert werden');
+      }
+      if (!adData.title) {
+        throw new Error('Produkttitel fehlt');
+      }
+      if (!adData.description) {
+        throw new Error('Produktbeschreibung fehlt');
       }
 
       Logger.info('[Kleinanzeigen] Ad data extracted:', adData);
 
       // Lade Verkäufer-Einstellungen
       const sellerSettings = await StorageService.load<SellerSettings>('seller_settings');
-      if (!sellerSettings || !sellerSettings.name) {
-        throw new Error('Bitte konfiguriere zuerst deine Verkäufer-Daten in den Einstellungen (Extension-Icon klicken).');
+      if (!sellerSettings) {
+        throw new Error('Verkäufer-Einstellungen fehlen. Bitte konfiguriere deine Daten in den Einstellungen (Extension-Icon klicken).');
+      }
+      if (!sellerSettings.name) {
+        throw new Error('Verkäufer-Name fehlt. Bitte konfiguriere deine Daten in den Einstellungen (Extension-Icon klicken).');
       }
 
       Logger.info('[Kleinanzeigen] Seller settings loaded');
@@ -420,7 +503,7 @@ class KleinanzeigenContentScript {
       // Füge optimierte Beschreibung ein
       const inserted = KleinanzeigenDOMService.insertOptimizedDescription(optimizedDescription);
       if (!inserted) {
-        throw new Error('Beschreibung konnte nicht eingefügt werden');
+        throw new Error('Beschreibung konnte nicht eingefügt werden. Bitte versuche es erneut.');
       }
 
       // Success State
@@ -443,7 +526,11 @@ class KleinanzeigenContentScript {
       }, 3000);
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
       Logger.error('[Kleinanzeigen] Optimization error:', error);
+
+      // Zeige Toast mit Fehlermeldung
+      this.showToast(errorMessage, 'error');
 
       // Error State
       if (this.optimizeButton) {
@@ -452,7 +539,7 @@ class KleinanzeigenContentScript {
           <span>Fehler</span>
         `;
         this.optimizeButton.style.backgroundColor = '#f44336';
-        this.optimizeButton.title = error instanceof Error ? error.message : 'Unbekannter Fehler';
+        this.optimizeButton.title = errorMessage;
 
         setTimeout(() => {
           if (this.optimizeButton) {
