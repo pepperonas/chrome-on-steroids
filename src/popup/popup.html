@@ -95,6 +95,48 @@
         </div>
       </section>
       
+      <!-- Generierungs-Logs -->
+      <section class="settings-section">
+        <h2>Generierungs-Logs</h2>
+        <p class="section-description">
+          Alle Parameter jeder Anschreiben-Generierung werden automatisch gespeichert.
+        </p>
+        
+        <div class="log-stats" id="log-stats">
+          <div class="stat-item">
+            <span class="stat-label">Gesamt:</span>
+            <span class="stat-value" id="stat-total">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Erfolgreich:</span>
+            <span class="stat-value success" id="stat-success">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Fehler:</span>
+            <span class="stat-value error" id="stat-failed">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Ø Zeit:</span>
+            <span class="stat-value" id="stat-avg-time">0ms</span>
+          </div>
+        </div>
+        
+        <div class="log-actions">
+          <button class="btn btn-icon" id="export-logs-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            Logs exportieren
+          </button>
+          <button class="btn btn-icon btn-danger" id="clear-logs-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            </svg>
+            Logs löschen
+          </button>
+        </div>
+      </section>
+      
       <!-- Status Anzeige -->
       <div class="status-message hidden" id="status-message"></div>
     </div>

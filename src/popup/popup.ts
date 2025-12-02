@@ -1,4 +1,5 @@
 import { StorageService } from '../services/StorageService';
+import { LoggingService } from '../services/LoggingService';
 import { ChatGPTProvider } from '../services/ChatGPTProvider';
 import { ClaudeProvider } from '../services/ClaudeProvider';
 import { ApiConfig, AIProvider } from '../models/ApiConfig';
@@ -18,6 +19,7 @@ class PopupController {
 
   private async initialize(): Promise<void> {
     await this.loadSettings();
+    await this.loadLogStats();
     this.attachEventListeners();
   }
 
@@ -111,6 +113,16 @@ class PopupController {
         await this.importSettings(input.files[0]);
         input.value = ''; // Reset input
       }
+    });
+
+    // Export Logs Button
+    document.getElementById('export-logs-btn')?.addEventListener('click', async () => {
+      await this.exportLogs();
+    });
+
+    // Clear Logs Button
+    document.getElementById('clear-logs-btn')?.addEventListener('click', async () => {
+      await this.clearLogs();
     });
   }
 
@@ -496,6 +508,78 @@ class PopupController {
     } catch (error) {
       this.showStatus('Fehler beim Importieren - Ungültige Datei', 'error');
       Logger.error('Error importing settings:', error);
+    }
+  }
+
+  /**
+   * Lädt Log-Statistiken
+   */
+  private async loadLogStats(): Promise<void> {
+    try {
+      const stats = await LoggingService.getStats();
+      
+      const totalEl = document.getElementById('stat-total');
+      const successEl = document.getElementById('stat-success');
+      const failedEl = document.getElementById('stat-failed');
+      const avgTimeEl = document.getElementById('stat-avg-time');
+      
+      if (totalEl) totalEl.textContent = stats.totalLogs.toString();
+      if (successEl) successEl.textContent = stats.successfulGenerations.toString();
+      if (failedEl) failedEl.textContent = stats.failedGenerations.toString();
+      if (avgTimeEl) avgTimeEl.textContent = `${stats.averageGenerationTime}ms`;
+      
+    } catch (error) {
+      Logger.error('Error loading log stats:', error);
+    }
+  }
+
+  /**
+   * Exportiert alle Generierungs-Logs
+   */
+  private async exportLogs(): Promise<void> {
+    try {
+      const stats = await LoggingService.getStats();
+      
+      if (stats.totalLogs === 0) {
+        this.showStatus('Keine Logs zum Exportieren vorhanden', 'error');
+        return;
+      }
+      
+      await LoggingService.exportLogs();
+      this.showStatus(`${stats.totalLogs} Logs erfolgreich exportiert ✓`, 'success');
+      
+    } catch (error) {
+      this.showStatus('Fehler beim Exportieren der Logs', 'error');
+      Logger.error('Error exporting logs:', error);
+    }
+  }
+
+  /**
+   * Löscht alle Generierungs-Logs
+   */
+  private async clearLogs(): Promise<void> {
+    try {
+      const stats = await LoggingService.getStats();
+      
+      if (stats.totalLogs === 0) {
+        this.showStatus('Keine Logs zum Löschen vorhanden', 'error');
+        return;
+      }
+      
+      const confirmMessage = `Alle ${stats.totalLogs} Logs löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden!`;
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+      
+      await LoggingService.clearLogs();
+      await this.loadLogStats(); // Statistiken neu laden
+      
+      this.showStatus('Alle Logs gelöscht ✓', 'success');
+      
+    } catch (error) {
+      this.showStatus('Fehler beim Löschen der Logs', 'error');
+      Logger.error('Error clearing logs:', error);
     }
   }
 }

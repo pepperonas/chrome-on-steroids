@@ -3,9 +3,12 @@ import { ChatGPTProvider } from '../services/ChatGPTProvider';
 import { ClaudeProvider } from '../services/ClaudeProvider';
 import { StorageService } from '../services/StorageService';
 import { DOMService } from '../services/DOMService';
+import { LoggingService } from '../services/LoggingService';
 import { Logger } from '../utils/logger';
 import { ApiConfig, AIProvider } from '../models/ApiConfig';
 import { UserProfile } from '../models/UserProfile';
+import { Project } from '../models/Project';
+import { GenerationLogHelper } from '../models/GenerationLog';
 import { CONSTANTS } from '../utils/constants';
 
 /**
@@ -61,10 +64,18 @@ export class ApplicationController {
    * Generiert und fügt Bewerbungsanschreiben ein
    */
   async generateAndInsertApplication(): Promise<void> {
+    const startTime = Date.now();
+    let project: Project | null = null;
+    let userProfile: UserProfile | null = null;
+    let apiConfig: ApiConfig | null = null;
+    let prompt = '';
+    let coverLetter = '';
+    let modelUsed = '';
+
     try {
       // 1. Projektdaten extrahieren
       Logger.info('Extrahiere Projektdaten...');
-      const project = DOMService.extractProjectData();
+      project = DOMService.extractProjectData();
       if (!project) {
         throw new Error('Keine Projektdaten gefunden. Öffne das Bewerbungsmodal auf einer Projektseite.');
       }
@@ -77,7 +88,7 @@ export class ApplicationController {
 
       // 2. Benutzerprofil laden
       Logger.info('Lade Benutzerprofil...');
-      const userProfile = await StorageService.load<UserProfile>(CONSTANTS.STORAGE_KEYS.USER_PROFILE);
+      userProfile = await StorageService.load<UserProfile>(CONSTANTS.STORAGE_KEYS.USER_PROFILE);
       if (!userProfile) {
         throw new Error('Kein Benutzerprofil gefunden. Bitte öffne die Extension (Klick auf Icon) und fülle dein Profil aus.');
       }
@@ -94,18 +105,34 @@ export class ApplicationController {
         hasCustomIntro: !!userProfile.customIntro
       });
 
-      // 3. AI-Service initialisieren
+      // 3. API Config laden
+      apiConfig = await StorageService.load<ApiConfig>(CONSTANTS.STORAGE_KEYS.API_CONFIG);
+      
+      // 4. AI-Service initialisieren
       Logger.info('Initialisiere AI-Service...');
       if (!this.aiService) {
         await this.initialize();
       }
 
-      // 4. Anschreiben generieren
+      // 5. Prompt generieren (für Logging)
+      if (this.aiService) {
+        // Zugriff auf buildPrompt über die Instanz
+        prompt = (this.aiService as any).buildPrompt(project, userProfile);
+      }
+
+      // 6. Anschreiben generieren
       Logger.info('Generiere Anschreiben mit AI...');
-      const coverLetter = await this.aiService!.generateCoverLetter(project, userProfile);
+      coverLetter = await this.aiService!.generateCoverLetter(project, userProfile);
       Logger.info('Anschreiben generiert:', { length: coverLetter.length });
 
-      // 5. In Textfeld einfügen
+      // Bestimme verwendetes Modell
+      if (apiConfig) {
+        modelUsed = apiConfig.provider === AIProvider.CHATGPT
+          ? (apiConfig.chatgptModel || apiConfig.model || CONSTANTS.DEFAULT_MODELS.CHATGPT)
+          : (apiConfig.claudeModel || apiConfig.model || CONSTANTS.DEFAULT_MODELS.CLAUDE);
+      }
+
+      // 7. In Textfeld einfügen
       Logger.info('Füge Anschreiben in Textfeld ein...');
       const success = DOMService.insertCoverLetter(coverLetter);
 
@@ -113,11 +140,80 @@ export class ApplicationController {
         throw new Error('Fehler beim Einfügen des Anschreibens. Textfeld nicht gefunden.');
       }
 
+      // 8. Generierungs-Log erstellen und speichern
+      const generationTimeMs = Date.now() - startTime;
+      
+      if (apiConfig) {
+        const apiParams = this.getApiParams(apiConfig.provider);
+        
+        const log = GenerationLogHelper.createLog(
+          project,
+          userProfile,
+          apiConfig,
+          prompt,
+          coverLetter,
+          generationTimeMs,
+          modelUsed,
+          apiParams
+        );
+        
+        // Speichere Log asynchron (nicht blockierend)
+        LoggingService.saveLog(log).catch(err => 
+          Logger.error('Failed to save generation log:', err)
+        );
+        
+        Logger.info('📊 Generation log saved', {
+          generationTime: `${generationTimeMs}ms`,
+          model: modelUsed,
+          wordCount: coverLetter.trim().split(/\s+/).length
+        });
+      }
+
       Logger.info('✅ Anschreiben erfolgreich generiert und eingefügt');
 
     } catch (error) {
       Logger.error('Application generation failed:', error);
+      
+      // Fehler-Log erstellen
+      const generationTimeMs = Date.now() - startTime;
+      const errorLog = GenerationLogHelper.createErrorLog(
+        project,
+        userProfile,
+        apiConfig,
+        error instanceof Error ? error : new Error(String(error)),
+        generationTimeMs
+      );
+      
+      // Speichere Fehler-Log
+      LoggingService.saveLog(errorLog).catch(err => 
+        Logger.error('Failed to save error log:', err)
+      );
+      
       throw error;
+    }
+  }
+
+  /**
+   * Holt API-Parameter basierend auf Provider
+   */
+  private getApiParams(provider: AIProvider): {
+    temperature?: number;
+    maxTokens?: number;
+    presencePenalty?: number;
+    frequencyPenalty?: number;
+  } {
+    if (provider === AIProvider.CHATGPT) {
+      return {
+        temperature: 0.8,
+        maxTokens: 1500,
+        presencePenalty: 0.3,
+        frequencyPenalty: 0.3
+      };
+    } else {
+      return {
+        temperature: 0.8,
+        maxTokens: 2000
+      };
     }
   }
 }
