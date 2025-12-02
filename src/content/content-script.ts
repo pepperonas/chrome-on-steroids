@@ -27,20 +27,42 @@ class ApplyAIAssistant {
     // Beobachte Modal/Dialog-Öffnung für Bewerbungsformular (funktioniert auf allen Seiten)
     this.observeModalChanges();
 
-    // Prüfe ob wir auf einer Projektseite sind
-    if (DOMService.isProjectPage()) {
-      // Prüfe ob Anschreiben-Feld vorhanden ist und erstelle Button
+    // Beobachte DOM-Änderungen für dynamisch geladene Inhalte (auf allen Seiten)
+    this.observeDOMChanges();
+
+    // Beobachte URL-Änderungen (für SPA-Navigation)
+    this.observeUrlChanges();
+
+    // Initiale Prüfung für Button-Platzierung
+    this.checkForApplicationForm();
+  }
+
+  private checkForApplicationForm(): void {
+    // Prüfe zuerst auf Modal (höchste Priorität)
+    const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
+    const modalCoverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
+    
+    if (modal && modalCoverLetterField && modal.contains(modalCoverLetterField)) {
+      const isModalVisible = modal.classList.contains('show') && 
+        !modal.classList.contains('hidden') &&
+        modal.getAttribute('aria-hidden') !== 'true';
+      
+      if (isModalVisible) {
+        this.checkAndCreateButtonInModal(modalCoverLetterField);
+        return;
+      }
+    }
+
+    // Prüfe auf Projektdetailseite mit React-Komponente
+    const projectShowContainer = document.querySelector('[data-component-name="ProjectShow"]');
+    if (projectShowContainer) {
+      this.checkAndCreateButtonInProjectShow();
+      return;
+    }
+
+    // Fallback: Prüfe auf normales Anschreiben-Feld
+    if (DOMService.hasCoverLetterField()) {
       this.checkAndCreateButton();
-
-      // Beobachte DOM-Änderungen für dynamisch geladene Inhalte
-      this.observeDOMChanges();
-
-      // Beobachte URL-Änderungen (für SPA-Navigation)
-      this.observeUrlChanges();
-    } else {
-      Logger.info('Nicht auf einer Projektseite, aber Modal-Observer ist aktiv');
-      // Beobachte auch DOM-Änderungen für Modal-Erkennung
-      this.observeDOMChanges();
     }
   }
 
@@ -58,6 +80,77 @@ class ApplyAIAssistant {
     }
 
     this.createGenerateButton();
+  }
+
+  private checkAndCreateButtonInProjectShow(): void {
+    // Suche nach dem "Bewerben" Button auf der Projektdetailseite
+    const contactButton = document.querySelector('[data-testid="contact-button"]') as HTMLElement;
+    
+    if (!contactButton) {
+      return;
+    }
+
+    // Prüfe ob Button bereits existiert
+    if (document.getElementById('apply-ai-generate-btn-project-show')) {
+      return;
+    }
+
+    // Verhindere mehrfache gleichzeitige Erstellung
+    if (this.isCreatingButton) {
+      return;
+    }
+
+    this.isCreatingButton = true;
+    Logger.info('Erstelle ApplyAI Button auf Projektdetailseite');
+    
+    try {
+      this.createGenerateButtonInProjectShow(contactButton);
+    } finally {
+      setTimeout(() => {
+        this.isCreatingButton = false;
+      }, 500);
+    }
+  }
+
+  private createGenerateButtonInProjectShow(contactButton: HTMLElement): void {
+    const button = document.createElement('button');
+    button.id = 'apply-ai-generate-btn-project-show';
+    button.type = 'button';
+    button.className = 'fm-btn fm-btn-secondary mg-r-action-element-stacked';
+    button.setAttribute('data-id', 'apply-ai-button');
+    button.innerHTML = `
+      <i class="far fa-gem"></i>
+      <span>ApplyAI</span>
+    `;
+    button.title = 'Anschreiben mit AI generieren';
+    
+    button.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Klicke auf "Bewerben" Button um Modal zu öffnen
+      contactButton.click();
+      
+      // Warte bis Modal geöffnet ist und füge Button hinzu
+      setTimeout(() => {
+        const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
+        const coverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
+        
+        if (modal && coverLetterField && modal.contains(coverLetterField)) {
+          // Modal ist jetzt offen, warte kurz und klicke auf ApplyAI Button im Modal
+          setTimeout(() => {
+            const modalApplyAIButton = document.getElementById('apply-ai-generate-btn');
+            if (modalApplyAIButton) {
+              (modalApplyAIButton as HTMLElement).click();
+            }
+          }, 300);
+        }
+      }, 500);
+    });
+
+    // Füge Button nach dem "Bewerben" Button ein
+    contactButton.insertAdjacentElement('afterend', button);
+    this.generateButton = button;
   }
 
   private createGenerateButton(): void {
@@ -318,27 +411,14 @@ class ApplyAIAssistant {
   private observeDOMChanges(): void {
     // Beobachte DOM-Änderungen, um dynamisch geladene Anschreiben-Felder zu erkennen
     this.observer = new MutationObserver(() => {
-      // Prüfe immer auf Modal (funktioniert auf allen Seiten)
-      const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
-      const coverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
-      
-      if (modal && coverLetterField && modal.contains(coverLetterField)) {
-        const isModalVisible = modal.classList.contains('show') && 
-          !modal.classList.contains('hidden') &&
-          modal.getAttribute('aria-hidden') !== 'true';
-        
-        if (isModalVisible) {
-          this.checkAndCreateButtonInModal(coverLetterField);
-        }
-      } else if (DOMService.isProjectPage()) {
-        // Nur auf Projektseiten: Prüfe auf normales Anschreiben-Feld
-        this.checkAndCreateButton();
-      }
+      this.checkForApplicationForm();
     });
 
     this.observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'aria-hidden']
     });
   }
 
@@ -360,13 +440,17 @@ class ApplyAIAssistant {
   }
 
   private onUrlChange(): void {
-    if (!DOMService.isProjectPage()) {
-      // Entferne Button wenn nicht auf Projektseite
-      this.removeButton();
-    } else {
-      // Prüfe und erstelle Button wenn auf Projektseite
-      this.checkAndCreateButton();
+    // Entferne alle Buttons
+    this.removeButton();
+    const projectShowButton = document.getElementById('apply-ai-generate-btn-project-show');
+    if (projectShowButton) {
+      projectShowButton.remove();
     }
+    
+    // Prüfe neue Seite
+    setTimeout(() => {
+      this.checkForApplicationForm();
+    }, 500);
   }
 }
 
