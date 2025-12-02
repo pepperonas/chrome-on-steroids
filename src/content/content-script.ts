@@ -304,19 +304,6 @@ class ApplyAIAssistant {
     `;
     button.title = 'Anschreiben mit AI generieren';
     
-    // Erstelle Feuer-Container mit mehreren Schichten (CSS Only Fire)
-    const fireContainer = document.createElement('div');
-    fireContainer.className = 'fire-container';
-    
-    // Erstelle 3 Fire-Layer für realistischeres Feuer
-    for (let i = 0; i < 3; i++) {
-      const layer = document.createElement('div');
-      layer.className = 'fire-layer';
-      fireContainer.appendChild(layer);
-    }
-    
-    button.appendChild(fireContainer);
-    
     // Kein zusätzliches Styling - verwendet das Standard-Styling von fm-btn fm-btn-secondary
     // Entferne nur das target="_blank" Verhalten
     button.addEventListener('click', async (e) => {
