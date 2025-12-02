@@ -304,11 +304,6 @@ class ApplyAIAssistant {
     `;
     button.title = 'Anschreiben mit AI generieren';
     
-    // Erstelle Glitter-Feuer-Container
-    const fireGlitterContainer = document.createElement('div');
-    fireGlitterContainer.className = 'fire-glitter-container';
-    button.appendChild(fireGlitterContainer);
-    
     // Kein zusätzliches Styling - verwendet das Standard-Styling von fm-btn fm-btn-secondary
     // Entferne nur das target="_blank" Verhalten
     button.addEventListener('click', async (e) => {
