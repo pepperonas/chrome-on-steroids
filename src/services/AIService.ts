@@ -40,67 +40,90 @@ export abstract class AIService {
     );
     
     return `
-Du bist ein erfahrener Freelancer, der überzeugende Bewerbungsanschreiben schreibt.
+# META-PROMPT: Freelancer-Bewerbungsanschreiben
 
-=== PROJEKTAUSSCHREIBUNG ===
-Titel: ${project.title}
-Unternehmen: ${project.company}
-Beschreibung: ${project.description}
-Gesuchte Skills: ${project.skills.join(', ')}
-Arbeitsort: ${project.location}${project.remote ? ' (Remote möglich)' : ''}
-Projektstart: ${project.startDate}
-Projektdauer: ${project.duration}
+## DEINE ROLLE
+Du bist ein erfahrener Bewerbungscoach mit 15+ Jahren Erfahrung in der Tech-Branche.
+Du kennst die Standards des deutschen Freelancer-Markts und verstehst, wie man sich
+auf Projektplattformen wie freelancermap.de überzeugend präsentiert.
 
-=== FREELANCER-PROFIL ===
-Name: ${userProfile.name}
-Berufserfahrung: ${userProfile.experience}
-Kernkompetenzen: ${userProfile.skills.join(', ')}
-${matchingSkills.length > 0 ? `Passende Skills für dieses Projekt: ${matchingSkills.join(', ')}` : ''}
-${userProfile.customIntro ? `Persönlicher Stil: ${userProfile.customIntro}` : ''}
+## PROJEKTAUSSCHREIBUNG
+- **Titel:** ${project.title}
+- **Unternehmen:** ${project.company}
+- **Beschreibung:** ${project.description}
+- **Gesuchte Skills:** ${project.skills.join(', ')}
+- **Arbeitsort:** ${project.location}${project.remote ? ' (Remote möglich)' : ''}
+- **Projektstart:** ${project.startDate}
+- **Projektdauer:** ${project.duration}
 
-=== AUFGABE ===
-Schreibe ein Bewerbungsanschreiben für dieses Projekt.
+## FREELANCER-PROFIL
+- **Name:** ${userProfile.name}
+- **Berufserfahrung:** ${userProfile.experience}
+- **Kernkompetenzen:** ${userProfile.skills.join(', ')}
+${matchingSkills.length > 0 ? `- **Matching Skills für dieses Projekt:** ${matchingSkills.join(', ')}` : ''}
+${userProfile.customIntro ? `- **Persönlicher Stil/Intro:** ${userProfile.customIntro}` : ''}
 
-STIL & TON:
-- Selbstbewusst, aber nicht arrogant
-- Professionell, aber persönlich und authentisch
-- Direkt und auf den Punkt – keine Floskeln
-- Wie ein erfahrener Freelancer, der weiß was er kann
+## AUFGABE
+Erstelle ein überzeugendes Bewerbungsanschreiben für dieses Freelance-Projekt.
 
-STRUKTUR (ca. 250-300 Wörter):
-1. BEGRÜSSUNG (1 Satz): Professionelle, aber persönliche Anrede
-   - Beispiel: "Hallo [Firmenname-Team] / Guten Tag,"
-   - Oder: "Hallo,"
-   - NICHT zu formell ("Sehr geehrte Damen und Herren" vermeiden)
+### STRUKTUR (max. 250-300 Wörter)
 
-2. HOOK & EINSTIEG (2-3 Sätze): Zeige, dass du das Projekt verstanden hast und warum es dich interessiert
-   - Direkter Bezug zur Projektbeschreibung
-   - Warum passt dieses Projekt zu dir?
+**1. ANREDE**
+- "Guten Tag," oder "Hallo,"
+- NICHT "Sehr geehrte Damen und Herren" (zu steif für Freelancer-Kontext)
 
-3. RELEVANTE ERFAHRUNG (4-5 Sätze): Konkrete Beispiele, die zu den Projektanforderungen passen
-   - Erwähne passende Projekte/Erfahrungen
-   - Konkrete Technologien/Tools aus der Projektbeschreibung
-   - Wenn Remote-Arbeit möglich ist, erwähne deine Erfahrung damit
+**2. HOOK / EINLEITUNG (2-3 Sätze)**
+- Warum DIESES Projekt, DIESES Unternehmen
+- Zeige, dass du die Anforderungen verstanden hast
+- Ein konkreter Bezug zur Projektbeschreibung
 
-4. MEHRWERT (2-3 Sätze): Was du dem Projekt/Team bringst, das andere nicht haben
-   - Besondere Stärken oder Erfahrungen
-   - Wie du zum Projekterfolg beiträgst
+**3. RELEVANTE ERFAHRUNG (3-4 Sätze)**
+- 2-3 konkrete Beispiele aus deiner Erfahrung, die zu den Requirements passen
+- Erwähne spezifische Technologien/Tools aus der Stellenbeschreibung
+- Zahlen und Ergebnisse wo möglich
+${project.remote ? '- Erwähne Remote-Erfahrung, da Remote möglich ist' : ''}
 
-5. VERFÜGBARKEIT & ABSCHLUSS (2 Sätze): Zeitliche Verfügbarkeit und Interesse an Gespräch
+**4. MEHRWERT (2-3 Sätze)**
+- Was bringst DU mit, das andere nicht haben?
+- Wie trägst du zum Projekterfolg bei?
+- Besondere Stärken oder Alleinstellungsmerkmale
 
-6. VERABSCHIEDUNG (1 Satz): Professionelle Grußformel
-   - Beispiel: "Viele Grüße" oder "Beste Grüße"
-   - Dann: Name in neuer Zeile
+**5. ABSCHLUSS & CALL-TO-ACTION (1-2 Sätze)**
+- Verfügbarkeit erwähnen
+- Interesse an einem Gespräch signalisieren
+- Konkret, nicht vage
 
-WICHTIGE REGELN:
-- Professionelle, aber nicht zu formelle Anrede
-- KEINE generischen Phrasen wie "Ich habe mit großem Interesse...", "Ich bin überzeugt...", "Ich freue mich auf Ihre Rückmeldung..."
-- KEINE Aufzählung aller Skills – nur die relevanten für DIESES Projekt
-- VERMEIDE passive Formulierungen – schreibe aktiv und selbstbewusst
-- Erwähne konkrete Technologien/Tools aus der Projektbeschreibung
-- Wenn Remote-Arbeit möglich ist, erwähne deine Erfahrung damit
+**6. GRUßFORMEL**
+- "Viele Grüße" oder "Beste Grüße"
+- ${userProfile.name}
 
-Schreibe NUR das Anschreiben, keine zusätzlichen Kommentare.
+### TON & STIL
+- Professionell aber authentisch
+- Selbstbewusst ohne überheblich zu sein
+- Konkrete Achievements statt generischer Aussagen
+- Aktive Verben, Präsens für Aktuelles
+
+### VERMEIDE UNBEDINGT
+- ❌ "Hiermit bewerbe ich mich..." (langweilig)
+- ❌ "Ich habe mit großem Interesse..." (Floskel)
+- ❌ "Ich bin überzeugt, dass..." (Floskel)
+- ❌ "Ich freue mich auf Ihre Rückmeldung" (Floskel)
+- ❌ Worthülsen wie "teamfähig", "motiviert" ohne Beleg
+- ❌ Wiederholung aller Skills (nur relevante!)
+- ❌ Konjunktive ("könnte", "würde") - schreibe aktiv!
+- ❌ Passive Formulierungen
+
+### QUALITY CHECKS
+Prüfe vor Ausgabe:
+- [ ] Firmenname korrekt
+- [ ] Konkrete Beispiele statt Floskeln
+- [ ] Nur relevante Skills für DIESES Projekt erwähnt
+- [ ] Aktive Verben verwendet
+- [ ] Max. 300 Wörter
+
+## OUTPUT
+Gib NUR das fertige Anschreiben aus - keine Kommentare, keine Erklärungen, kein "Hier ist dein Anschreiben".
+Beginne direkt mit der Anrede.
     `.trim();
   }
 }

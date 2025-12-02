@@ -6,9 +6,138 @@ import { Logger } from '../utils/logger';
  */
 export class DOMService {
   /**
-   * Extrahiert Projektdaten von der Seite
+   * Extrahiert Projektdaten von der Seite oder aus dem Modal
    */
   static extractProjectData(): Project | null {
+    // Versuche zuerst aus dem Modal zu extrahieren (wenn geöffnet)
+    const modalData = this.extractProjectDataFromModal();
+    if (modalData) {
+      Logger.info('Projektdaten aus Modal extrahiert');
+      return modalData;
+    }
+
+    // Fallback: Extrahiere von der Projektdetailseite
+    const pageData = this.extractProjectDataFromPage();
+    if (pageData) {
+      Logger.info('Projektdaten von Seite extrahiert');
+      return pageData;
+    }
+
+    Logger.warn('Keine Projektdaten gefunden');
+    return null;
+  }
+
+  /**
+   * Extrahiert Projektdaten aus dem Bewerbungsmodal
+   */
+  private static extractProjectDataFromModal(): Project | null {
+    try {
+      const modal = document.querySelector('.modal.search-result-modal.show');
+      if (!modal) return null;
+
+      // Titel aus dem Modal-Header
+      const titleElement = modal.querySelector('.modal-header h5') ||
+        modal.querySelector('.modal-title') ||
+        modal.querySelector('h5') ||
+        modal.querySelector('h4');
+      
+      // Projektbeschreibung aus dem Modal
+      const descriptionElement = modal.querySelector('.project-description') ||
+        modal.querySelector('.description') ||
+        modal.querySelector('[class*="description"]') ||
+        modal.querySelector('.modal-body p');
+
+      // Firma/Unternehmen
+      const companyElement = modal.querySelector('.company-name') ||
+        modal.querySelector('[class*="company"]') ||
+        modal.querySelector('.client-name');
+
+      // Skills/Tags
+      const badgeElements = modal.querySelectorAll('.badge') ||
+        modal.querySelectorAll('.skill-badge') ||
+        modal.querySelectorAll('[class*="skill"]');
+
+      // Ort
+      const locationElement = modal.querySelector('[class*="location"]') ||
+        modal.querySelector('[class*="city"]') ||
+        modal.querySelector('.location');
+
+      // Remote
+      const remoteElement = modal.querySelector('[class*="remote"]');
+      const modalText = modal.textContent || '';
+      const remote = remoteElement?.textContent?.toLowerCase().includes('remote') ||
+        modalText.toLowerCase().includes('remote') || false;
+
+      // Dauer
+      const durationElement = modal.querySelector('[class*="duration"]') ||
+        modal.querySelector('.duration');
+
+      // Startdatum
+      const startElement = modal.querySelector('[class*="start"]') ||
+        modal.querySelector('[class*="beginning"]');
+
+      // Extrahiere Werte
+      const title = titleElement?.textContent?.trim() || '';
+      
+      // Beschreibung: Versuche verschiedene Quellen
+      let description = descriptionElement?.textContent?.trim() || '';
+      if (!description) {
+        // Versuche aus dem Modal-Body mehr Text zu holen
+        const modalBody = modal.querySelector('.modal-body');
+        if (modalBody) {
+          // Sammle alle Textinhalte außer Buttons und Inputs
+          const textNodes = modalBody.querySelectorAll('p, div:not(.buttons):not(.form-group)');
+          description = Array.from(textNodes)
+            .map(el => el.textContent?.trim())
+            .filter(text => text && text.length > 20)
+            .join(' ');
+        }
+      }
+
+      const company = companyElement?.textContent?.trim() || '';
+      
+      const skills = Array.from(badgeElements)
+        .map(badge => badge.textContent?.trim() || '')
+        .filter(skill => skill && 
+          !skill.includes('Top-Projekt') && 
+          !skill.includes('Remote') &&
+          skill.length > 1);
+
+      const location = locationElement?.textContent?.trim() || '';
+      const duration = durationElement?.textContent?.trim() || '';
+      const startDate = startElement?.textContent?.trim() || '';
+
+      // Mindestens Titel oder Beschreibung sollte vorhanden sein
+      if (!title && !description) {
+        return null;
+      }
+
+      // Generiere eine ID basierend auf Titel
+      const projectId = title ? title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 50) : 'modal-project';
+
+      return {
+        id: projectId,
+        title: title || 'Projekt aus Modal',
+        description: description || 'Keine Beschreibung verfügbar',
+        company,
+        location,
+        remote,
+        skills,
+        startDate,
+        duration,
+        workload: ''
+      };
+
+    } catch (error) {
+      Logger.error('Error extracting project data from modal:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Extrahiert Projektdaten von der Projektdetailseite
+   */
+  private static extractProjectDataFromPage(): Project | null {
     try {
       const titleElement = document.querySelector('.project-header h1') ||
         document.querySelector('h1[data-testid="project-title"]') ||
@@ -87,7 +216,7 @@ export class DOMService {
       };
 
     } catch (error) {
-      Logger.error('Error extracting project data:', error);
+      Logger.error('Error extracting project data from page:', error);
       return null;
     }
   }

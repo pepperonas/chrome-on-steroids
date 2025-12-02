@@ -63,33 +63,57 @@ export class ApplicationController {
   async generateAndInsertApplication(): Promise<void> {
     try {
       // 1. Projektdaten extrahieren
+      Logger.info('Extrahiere Projektdaten...');
       const project = DOMService.extractProjectData();
       if (!project) {
-        throw new Error('Keine Projektdaten gefunden. Bist du auf einer Projektseite?');
+        throw new Error('Keine Projektdaten gefunden. Öffne das Bewerbungsmodal auf einer Projektseite.');
       }
+      Logger.info('Projektdaten gefunden:', { 
+        title: project.title, 
+        company: project.company,
+        skills: project.skills.length,
+        hasDescription: !!project.description
+      });
 
       // 2. Benutzerprofil laden
+      Logger.info('Lade Benutzerprofil...');
       const userProfile = await StorageService.load<UserProfile>(CONSTANTS.STORAGE_KEYS.USER_PROFILE);
       if (!userProfile) {
-        throw new Error('Kein Benutzerprofil konfiguriert. Bitte fülle dein Profil in den Einstellungen aus.');
+        throw new Error('Kein Benutzerprofil gefunden. Bitte öffne die Extension (Klick auf Icon) und fülle dein Profil aus.');
       }
+      
+      // Validiere Benutzerprofil
+      if (!userProfile.name || !userProfile.skills || userProfile.skills.length === 0) {
+        throw new Error('Benutzerprofil unvollständig. Bitte fülle Name und Skills in den Einstellungen aus.');
+      }
+      
+      Logger.info('Benutzerprofil geladen:', { 
+        name: userProfile.name, 
+        skills: userProfile.skills.length,
+        hasExperience: !!userProfile.experience,
+        hasCustomIntro: !!userProfile.customIntro
+      });
 
       // 3. AI-Service initialisieren
+      Logger.info('Initialisiere AI-Service...');
       if (!this.aiService) {
         await this.initialize();
       }
 
       // 4. Anschreiben generieren
+      Logger.info('Generiere Anschreiben mit AI...');
       const coverLetter = await this.aiService!.generateCoverLetter(project, userProfile);
+      Logger.info('Anschreiben generiert:', { length: coverLetter.length });
 
       // 5. In Textfeld einfügen
+      Logger.info('Füge Anschreiben in Textfeld ein...');
       const success = DOMService.insertCoverLetter(coverLetter);
 
       if (!success) {
-        throw new Error('Fehler beim Einfügen des Anschreibens');
+        throw new Error('Fehler beim Einfügen des Anschreibens. Textfeld nicht gefunden.');
       }
 
-      Logger.info('Anschreiben erfolgreich generiert und eingefügt');
+      Logger.info('✅ Anschreiben erfolgreich generiert und eingefügt');
 
     } catch (error) {
       Logger.error('Application generation failed:', error);
