@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ApplyAI - AI Bewerbungsassistent",
-  "version": "0.0.44",
+  "version": "0.0.45",
   "description": "Automatische Generierung von Bewerbungsanschreiben für freelancermap.de",
   "permissions": [
     "storage",

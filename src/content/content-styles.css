@@ -1,6 +1,55 @@
 /* Generate Button */
 #apply-ai-generate-btn {
   animation: fadeInUp 0.4s ease-out;
+  position: relative;
+  overflow: visible;
+}
+
+/* Glitter Fire Animation Container */
+.fire-glitter-container {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 100px;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.fire-glitter-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: 
+    url("https://assets.codepen.io/13471/silver-glitter-background.png"),
+    url("https://assets.codepen.io/13471/silver-glitter-background.png"),
+    linear-gradient(
+      0deg,
+      white 0px,
+      #ff8951 5px,
+      #dcbc169c 30%,
+      transparent 70%
+    ),
+    radial-gradient(ellipse at bottom, transparent 30%, black 60%);
+  background-size: 350px 500px, 400px 650px, 100% 100%, 100% 100%;
+  background-blend-mode: hard-light, color-dodge, multiply;
+  background-position: center 0px, center 0px, 50% 100%, center center;
+  background-repeat: repeat, repeat, repeat, no-repeat;
+  mix-blend-mode: color-dodge;
+  filter: brightness(3.7) blur(7px) contrast(6);
+  animation: fire-glitter 1.75s linear infinite;
+  box-shadow: inset 0 -40px 50px -60px #63bbc5;
+}
+
+@keyframes fire-glitter {
+  0% {
+    background-position: center 0px, center 0px, 50% 100%, center center;
+  }
+  100% {
+    background-position: center -500px, center -650px, 50% 100%, center center;
+  }
 }
 
 @keyframes fadeInUp {
