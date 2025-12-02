@@ -1,6 +1,96 @@
 /* Generate Button */
 #apply-ai-generate-btn {
   animation: fadeInUp 0.4s ease-out;
+  position: relative;
+  overflow: visible;
+}
+
+/* Feuer-Animation Container */
+#apply-ai-generate-btn::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  width: 80px;
+  height: 200px;
+  transform: translateX(-50%);
+  filter: blur(2px) contrast(20);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Feuer-Basis */
+#apply-ai-generate-btn::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  width: 80px;
+  height: 200px;
+  transform: translateX(-50%);
+  border-radius: 45%;
+  box-sizing: border-box;
+  border: 120px solid transparent;
+  border-bottom: 120px solid transparent;
+  background-color: #761b00;
+  filter: blur(20px) contrast(30);
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* Feuer-Partikel Container */
+.fire-particles {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  width: 80px;
+  height: 200px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1001;
+  filter: blur(1px) contrast(5);
+  overflow: visible;
+}
+
+.fire-ball {
+  position: absolute;
+  top: 0;
+  background: #fa8763;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+
+/* Generiere 200 Partikel mit verschiedenen Größen und Animationen */
+.fire-ball:nth-child(1) { width: 12px; height: 12px; left: calc(15px - 40px); animation: movetop 1s linear -0.5s infinite; }
+.fire-ball:nth-child(2) { width: 8px; height: 8px; left: calc(25px - 40px); animation: movetop 1s linear -1.2s infinite; }
+.fire-ball:nth-child(3) { width: 15px; height: 15px; left: calc(35px - 40px); animation: movetop 1s linear -0.8s infinite; }
+.fire-ball:nth-child(4) { width: 10px; height: 10px; left: calc(45px - 40px); animation: movetop 1s linear -1.5s infinite; }
+.fire-ball:nth-child(5) { width: 13px; height: 13px; left: calc(55px - 40px); animation: movetop 1s linear -0.3s infinite; }
+.fire-ball:nth-child(6) { width: 9px; height: 9px; left: calc(20px - 40px); animation: movetop 1s linear -2.1s infinite; }
+.fire-ball:nth-child(7) { width: 14px; height: 14px; left: calc(30px - 40px); animation: movetop 1s linear -0.7s infinite; }
+.fire-ball:nth-child(8) { width: 11px; height: 11px; left: calc(40px - 40px); animation: movetop 1s linear -1.8s infinite; }
+.fire-ball:nth-child(9) { width: 16px; height: 16px; left: calc(50px - 40px); animation: movetop 1s linear -0.4s infinite; }
+.fire-ball:nth-child(10) { width: 7px; height: 7px; left: calc(60px - 40px); animation: movetop 1s linear -2.5s infinite; }
+
+/* Generiere weitere Partikel mit JavaScript (wird dynamisch erstellt) */
+@keyframes movetop {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  20% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  87.7% {
+    transform: translateY(-170px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(-170px);
+    opacity: 0;
+  }
 }
 
 @keyframes fadeInUp {

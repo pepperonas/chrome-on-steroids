@@ -5,7 +5,7 @@
   "author": "Martin Pfeffer | celox.io",
   "license": "MIT",
   "scripts": {
-    "build": "webpack --mode production",
+    "build": "node scripts/increment-version.js && webpack --mode production",
     "dev": "webpack --mode development --watch",
     "test": "jest",
     "test:watch": "jest --watch",

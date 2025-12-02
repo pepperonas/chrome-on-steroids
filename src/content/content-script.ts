@@ -304,6 +304,33 @@ class ApplyAIAssistant {
     `;
     button.title = 'Anschreiben mit AI generieren';
     
+    // Erstelle Feuer-Partikel Container
+    const fireContainer = document.createElement('div');
+    fireContainer.className = 'fire-particles';
+    
+    // Erstelle 200 Feuer-Partikel
+    for (let i = 0; i < 200; i++) {
+      const ball = document.createElement('div');
+      ball.className = 'fire-ball';
+      
+      // Zufällige Größe zwischen 5-20px
+      const size = Math.random() * 15 + 5;
+      ball.style.width = `${size}px`;
+      ball.style.height = `${size}px`;
+      
+      // Zufällige Position (-40px bis +30px von center)
+      const leftOffset = Math.random() * 70 - 40;
+      ball.style.left = `calc(50% + ${leftOffset}px)`;
+      
+      // Zufällige Animation-Delay (-3s bis 0s)
+      const delay = -(Math.random() * 3000) / 1000;
+      ball.style.animation = `movetop 1s linear ${delay}s infinite`;
+      
+      fireContainer.appendChild(ball);
+    }
+    
+    button.appendChild(fireContainer);
+    
     // Kein zusätzliches Styling - verwendet das Standard-Styling von fm-btn fm-btn-secondary
     // Entferne nur das target="_blank" Verhalten
     button.addEventListener('click', async (e) => {
