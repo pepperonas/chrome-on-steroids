@@ -83,7 +83,7 @@ class ApplyAIAssistant {
   }
 
   private checkAndCreateButtonInProjectShow(): void {
-    // Prüfe ob Button bereits existiert
+    // Prüfe ob Floating Button bereits existiert
     if (document.getElementById('apply-ai-floating-btn')) {
       return;
     }
@@ -94,15 +94,95 @@ class ApplyAIAssistant {
     }
 
     this.isCreatingButton = true;
-    Logger.info('Erstelle ApplyAI Floating Button auf Projektdetailseite');
+    Logger.info('Erstelle ApplyAI Buttons auf Projektdetailseite');
     
     try {
+      // Erstelle Floating Button
       this.createFloatingButton();
+      
+      // Erstelle auch Button im Formular (neben "Text generieren")
+      this.createButtonInProjectForm();
     } finally {
       setTimeout(() => {
         this.isCreatingButton = false;
       }, 500);
     }
+  }
+
+  private createButtonInProjectForm(): void {
+    // Suche nach dem "Text generieren" Button im Formular
+    const aiButton = document.querySelector('[data-id="ai-application-button"]') as HTMLElement;
+    
+    if (!aiButton) {
+      Logger.info('Text generieren Button nicht gefunden');
+      return;
+    }
+
+    // Prüfe ob Button bereits existiert
+    if (document.getElementById('apply-ai-generate-btn-form')) {
+      return;
+    }
+
+    // Erstelle ApplyAI Button
+    const button = document.createElement('button');
+    button.id = 'apply-ai-generate-btn-form';
+    button.type = 'button';
+    button.className = 'fm-btn fm-btn-secondary';
+    button.setAttribute('data-id', 'apply-ai-button-form');
+    button.innerHTML = `
+      <i class="far fa-gem"></i>
+      <span>ApplyAI</span>
+    `;
+    button.title = 'Anschreiben mit AI generieren';
+    
+    button.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      Logger.info('ApplyAI Button im Formular geklickt');
+      
+      // Zeige Loading-State
+      const originalHTML = button.innerHTML;
+      button.innerHTML = `
+        <i class="far fa-spinner fa-spin"></i>
+        <span>Generiere...</span>
+      `;
+      button.style.pointerEvents = 'none';
+      
+      try {
+        // Starte Generierung direkt
+        const controller = new ApplicationController();
+        await controller.generateAndInsertApplication();
+        
+        Logger.info('Generierung erfolgreich');
+        
+        // Erfolg anzeigen
+        button.innerHTML = `
+          <i class="far fa-check"></i>
+          <span>Generiert!</span>
+        `;
+        
+        setTimeout(() => {
+          button.innerHTML = originalHTML;
+          button.style.pointerEvents = 'auto';
+        }, 2000);
+        
+      } catch (error) {
+        Logger.error('Generierung fehlgeschlagen:', error);
+        button.innerHTML = `
+          <i class="far fa-exclamation-triangle"></i>
+          <span>Fehler</span>
+        `;
+        setTimeout(() => {
+          button.innerHTML = originalHTML;
+          button.style.pointerEvents = 'auto';
+        }, 3000);
+      }
+    });
+
+    // Füge Button nach dem "Text generieren" Button ein
+    aiButton.insertAdjacentElement('afterend', button);
+    Logger.info('ApplyAI Button neben "Text generieren" Button platziert');
   }
 
   private createFloatingButton(): void {
@@ -301,6 +381,12 @@ class ApplyAIAssistant {
     const floatingButton = document.getElementById('apply-ai-floating-btn');
     if (floatingButton) {
       floatingButton.remove();
+    }
+    
+    // Entferne auch Form Button
+    const formButton = document.getElementById('apply-ai-generate-btn-form');
+    if (formButton) {
+      formButton.remove();
     }
   }
 
