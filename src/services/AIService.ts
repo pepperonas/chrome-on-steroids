@@ -39,15 +39,21 @@ export abstract class AIService {
       projectSkillsLower.some(ps => ps.includes(skill.toLowerCase()) || skill.toLowerCase().includes(ps))
     );
     
-    // Nicht-passende Skills (für Kontext, aber nicht Fokus)
-    const otherSkills = userProfile.skills.filter(skill => !matchingSkills.includes(skill));
-    
     return `
 # AUFGABE: Erstelle ein überzeugendes Freelancer-Bewerbungsanschreiben
 
-## KONTEXT
-Du bist ein Top-Freelancer mit ${userProfile.experience} Erfahrung, der sich auf ein Projekt bewirbt.
-Dein Ziel: Zeige in 250-300 Wörtern, dass du GENAU die richtige Person für dieses Projekt bist.
+## ⚠️ KRITISCH: WICHTIGSTE REGEL
+**DU DARFST NICHTS ERFINDEN!**
+- Verwende NUR die Informationen, die unten im "DEIN PROFIL" Abschnitt stehen
+- Erfinde KEINE Projekte, Rollen, Technologien oder Erfahrungen
+- Erwähne KEINE Skills, die nicht in der Liste "Deine Skills" stehen
+- Erfinde KEINE Firmennamen, Projekte oder Tätigkeiten
+- Wenn etwas nicht in deinem Profil steht, erwähne es NICHT
+
+**Beispiel FALSCH:** "Als ITSM-Berater habe ich..." ← NICHT im Profil!
+**Beispiel RICHTIG:** "Als Senior Java Developer bei Intertek habe ich..." ← Steht im Profil!
+
+---
 
 ## PROJEKTDETAILS
 **Titel:** ${project.title}
@@ -63,20 +69,26 @@ ${project.skills.length > 0 ? project.skills.map(s => `- ${s}`).join('\n') : '- 
 - Dauer: ${project.duration || 'Nicht angegeben'}
 ${project.workload ? `- Auslastung: ${project.workload}` : ''}
 
-## DEIN PROFIL
+---
+
+## DEIN PROFIL - NUR DIESE DATEN VERWENDEN!
+
 **Name:** ${userProfile.name}
-**Erfahrung:** ${userProfile.experience}
 
-**Deine Skills:**
+**Deine tatsächlichen Skills (NUR diese erwähnen!):**
+${userProfile.skills.map(s => `- ${s}`).join('\n')}
+
 ${matchingSkills.length > 0 ? `
-🎯 **PERFEKTE MATCHES für dieses Projekt:**
+**🎯 Skills die zum Projekt passen:**
 ${matchingSkills.map(s => `- ${s}`).join('\n')}
-` : ''}
-${otherSkills.length > 0 ? `
-Weitere Kompetenzen: ${otherSkills.slice(0, 5).join(', ')}
-` : ''}
+` : `
+**⚠️ HINWEIS:** Keine direkten Skill-Matches gefunden. Fokussiere auf übertragbare Erfahrungen.
+`}
 
-${userProfile.customIntro ? `**Dein Stil/Besonderheiten:** ${userProfile.customIntro}` : ''}
+**Deine tatsächliche Berufserfahrung (WORTWÖRTLICH aus diesem Text):**
+${userProfile.experience}
+
+${userProfile.customIntro ? `**Persönlicher Stil:** ${userProfile.customIntro}` : ''}
 
 ---
 
@@ -88,20 +100,21 @@ ${userProfile.customIntro ? `**Dein Stil/Besonderheiten:** ${userProfile.customI
 → "Guten Tag," oder "Hallo," (NIEMALS "Sehr geehrte...")
 
 **[HOOK]** (2-3 Sätze)
-→ Warum passt DIESES Projekt perfekt zu dir?
+→ Warum passt DIESES Projekt zu deinen tatsächlichen Erfahrungen?
 → Zeige, dass du die Anforderungen verstanden hast
-→ Ein spezifischer Bezug zur Projektbeschreibung
+→ Bezug zu deinen tatsächlichen Projekten/Erfahrungen
 
 **[ERFAHRUNG & SKILLS]** (4-5 Sätze)
-→ Erwähne ${matchingSkills.length > 0 ? `EXPLIZIT diese Skills: ${matchingSkills.slice(0, 3).join(', ')}` : 'die wichtigsten Projekt-Skills'}
-→ 2-3 konkrete Beispiele aus deiner Erfahrung
-→ Zahlen/Ergebnisse wenn möglich ("5+ Jahre", "20+ Projekte", etc.)
-${project.remote ? '→ Betone deine Remote-Erfahrung!' : ''}
+${matchingSkills.length > 0 ? `→ Erwähne diese Skills aus deinem Profil: ${matchingSkills.slice(0, 3).join(', ')}` : '→ Erwähne Skills aus deinem Profil, die relevant sind'}
+→ Zitiere KONKRET aus deiner Berufserfahrung (Firmenname, Tätigkeit, Technologien)
+→ Verwende NUR Informationen aus dem "Deine tatsächliche Berufserfahrung" Abschnitt
+→ Zahlen wenn vorhanden ("7 Jahre", "seit 2014", etc.)
+${project.remote ? '→ Erwähne Remote-Erfahrung nur wenn sie im Profil steht!' : ''}
 
 **[MEHRWERT]** (2-3 Sätze)
-→ Was macht DICH besonders?
-→ Wie hilfst du dem Projekt zum Erfolg?
-→ Alleinstellungsmerkmal
+→ Was macht DICH besonders? (basierend auf tatsächlichen Erfahrungen)
+→ Wie hilfst du dem Projekt? (nur mit echten Skills/Erfahrungen)
+→ Alleinstellungsmerkmal (aus deinem Profil)
 
 **[CALL-TO-ACTION]** (1-2 Sätze)
 → Verfügbarkeit: "Ich bin ab [Datum] verfügbar" oder "Ich kann sofort starten"
@@ -117,10 +130,10 @@ ${project.remote ? '→ Betone deine Remote-Erfahrung!' : ''}
 
 ✅ **MACH DAS:**
 - Aktive Verben: "Ich entwickle", "Ich habe umgesetzt", "Ich bringe mit"
-- Konkrete Beispiele: "In meinem letzten Projekt mit React und TypeScript..."
+- Konkrete Beispiele AUS DEINEM PROFIL: "Bei Intertek entwickle ich...", "Als Freelancer bei celox.io..."
 - Selbstbewusst: "Ich bin überzeugt, dass meine Erfahrung mit X perfekt passt"
 - Persönlich: Zeige Begeisterung für das Projekt
-- Zahlen: "10+ Jahre", "50+ Projekte", "Team von 5 Entwicklern geleitet"
+- Zahlen AUS DEM PROFIL: "7 Jahre", "seit 2014", etc.
 
 ❌ **VERMEIDE UNBEDINGT:**
 - "Hiermit bewerbe ich mich..." ← Langweilig!
@@ -129,18 +142,23 @@ ${project.remote ? '→ Betone deine Remote-Erfahrung!' : ''}
 - "teamfähig", "motiviert", "flexibel" ← Ohne Beleg wertlos!
 - Alle Skills auflisten ← Nur die relevanten!
 - Passive Formulierungen ← Immer aktiv!
+- **ERFINDEN von Projekten, Rollen, Technologien ← ABSOLUT VERBOTEN!**
 
 ---
 
-### QUALITÄTSKONTROLLE
+### VALIDIERUNG VOR AUSGABE
 
-Prüfe VOR der Ausgabe:
-1. ✓ Firmenname korrekt (${project.company || 'falls angegeben'})
-2. ✓ Mindestens 2 konkrete Beispiele
-3. ✓ Matching Skills erwähnt: ${matchingSkills.length > 0 ? matchingSkills.slice(0, 3).join(', ') : 'Projekt-Skills'}
-4. ✓ Keine Floskeln oder Konjunktive
-5. ✓ 250-300 Wörter
-6. ✓ Aktive Verben durchgehend
+Prüfe JEDEN Satz:
+1. ✓ Jede erwähnte Firma steht im Profil? (Intertek, celox.io, CodingGiants)
+2. ✓ Jede erwähnte Rolle/Tätigkeit steht im Profil? (Senior Java Developer, Full-Stack Developer, etc.)
+3. ✓ Jede erwähnte Technologie steht in den Skills? (Java, Spring Boot, React, etc.)
+4. ✓ Jede Zahl/Zeitangabe steht im Profil? (7 Jahre, seit 2014, etc.)
+5. ✓ Keine erfundenen Projekte, Firmen oder Erfahrungen?
+6. ✓ Firmenname korrekt (${project.company || 'falls angegeben'})
+7. ✓ 250-300 Wörter
+8. ✓ Aktive Verben durchgehend
+
+**Wenn du dir bei einem Satz nicht sicher bist, ob er im Profil steht → LASS IHN WEG!**
 
 ---
 

@@ -124,6 +124,9 @@ export class ApplicationController {
       Logger.info('Generiere Anschreiben mit AI...');
       coverLetter = await this.aiService!.generateCoverLetter(project, userProfile);
       Logger.info('Anschreiben generiert:', { length: coverLetter.length });
+      
+      // 6.5. Validiere gegen Profil (erfundene Inhalte erkennen)
+      this.validateCoverLetterAgainstProfile(coverLetter, userProfile);
 
       // Bestimme verwendetes Modell
       if (apiConfig) {
@@ -214,6 +217,70 @@ export class ApplicationController {
         temperature: 0.8,
         maxTokens: 2000
       };
+    }
+  }
+
+  /**
+   * Validiert ob erwähnte Inhalte im Profil stehen (erfundene Inhalte erkennen)
+   */
+  private validateCoverLetterAgainstProfile(
+    coverLetter: string,
+    userProfile: UserProfile
+  ): void {
+    const textLower = coverLetter.toLowerCase();
+    const experienceLower = userProfile.experience.toLowerCase();
+    const skillsLower = userProfile.skills.map(s => s.toLowerCase());
+    const profileText = (userProfile.experience + ' ' + userProfile.skills.join(' ')).toLowerCase();
+    
+    // Erkenne häufig erfundene Rollen/Tätigkeiten
+    const suspiciousRoles = [
+      'itsm-berater', 'itsm consultant', 'compliance manager', 
+      'it support', 'projektmanager', 'architekt', 'berater',
+      'consultant', 'manager', 'specialist'
+    ];
+    
+    // Erkenne häufig erfundene Technologien
+    const suspiciousTech = [
+      'itsm', 'jira service management', 'servicenow', 'smax', 
+      'opentext', 'iso 27001', 'idw ps 951', 'itil', 'cmdb'
+    ];
+    
+    // Prüfe auf verdächtige Rollen
+    suspiciousRoles.forEach(role => {
+      if (textLower.includes(role) && !profileText.includes(role)) {
+        Logger.warn(`⚠️ VALIDIERUNG: "${role}" wurde erwähnt, steht aber nicht im Profil!`);
+      }
+    });
+    
+    // Prüfe auf verdächtige Technologien
+    suspiciousTech.forEach(tech => {
+      if (textLower.includes(tech)) {
+        const skillFound = skillsLower.some(skill => 
+          skill.includes(tech) || tech.includes(skill)
+        );
+        const expFound = experienceLower.includes(tech);
+        
+        if (!skillFound && !expFound) {
+          Logger.warn(`⚠️ VALIDIERUNG: "${tech}" wurde erwähnt, steht aber nicht im Profil!`);
+        }
+      }
+    });
+    
+    // Prüfe auf erwähnte Firmen (außer bekannten aus dem Profil)
+    const knownCompanies = ['intertek', 'celox', 'codinggiants'];
+    const companyPattern = /\b(bei|für|als)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g;
+    const matches = coverLetter.match(companyPattern);
+    
+    if (matches) {
+      matches.forEach(match => {
+        const company = match.replace(/^(bei|für|als)\s+/i, '').toLowerCase();
+        const isKnown = knownCompanies.some(known => company.includes(known) || known.includes(company));
+        const inProfile = profileText.includes(company);
+        
+        if (!isKnown && !inProfile && company.length > 3) {
+          Logger.warn(`⚠️ VALIDIERUNG: Firma "${company}" wurde erwähnt, steht aber nicht im Profil!`);
+        }
+      });
     }
   }
 }
