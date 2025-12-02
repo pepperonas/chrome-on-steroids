@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "exportDate": "2025-12-02T10:30:00.000Z",
+  "apiConfig": {
+    "provider": "claude",
+    "apiKey": "sk-ant-api03-...",
+    "model": "claude-3-haiku-20240307",
+    "chatgptApiKey": "sk-proj-...",
+    "claudeApiKey": "sk-ant-api03-...",
+    "chatgptModel": "gpt-4",
+    "claudeModel": "claude-3-haiku-20240307"
+  },
+  "userProfile": {
+    "name": "Martin Pfeffer",
+    "email": "martin@example.com",
+    "phone": "+49 123 456789",
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "React",
+      "TypeScript",
+      "Node.js",
+      "Docker",
+      "AWS",
+      "PostgreSQL",
+      "MongoDB",
+      "Android Development",
+      "Kotlin",
+      "Python"
+    ],
+    "experience": "10+ Jahre Erfahrung in Full-Stack Entwicklung mit Fokus auf Java/Spring Boot Backend und React Frontend. Spezialisiert auf Microservices-Architekturen, Cloud-Deployment und Mobile Development.",
+    "portfolio": "",
+    "customIntro": "Ich bin ein erfahrener Freelancer mit Schwerpunkt auf moderne Web- und Mobile-Technologien. Besonders stark in der Entwicklung skalierbarer Backend-Systeme und intuitiver User Interfaces."
+  }
+}
+
