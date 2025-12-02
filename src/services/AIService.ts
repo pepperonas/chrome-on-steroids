@@ -39,91 +39,116 @@ export abstract class AIService {
       projectSkillsLower.some(ps => ps.includes(skill.toLowerCase()) || skill.toLowerCase().includes(ps))
     );
     
+    // Nicht-passende Skills (für Kontext, aber nicht Fokus)
+    const otherSkills = userProfile.skills.filter(skill => !matchingSkills.includes(skill));
+    
     return `
-# META-PROMPT: Freelancer-Bewerbungsanschreiben
+# AUFGABE: Erstelle ein überzeugendes Freelancer-Bewerbungsanschreiben
 
-## DEINE ROLLE
-Du bist ein erfahrener Bewerbungscoach mit 15+ Jahren Erfahrung in der Tech-Branche.
-Du kennst die Standards des deutschen Freelancer-Markts und verstehst, wie man sich
-auf Projektplattformen wie freelancermap.de überzeugend präsentiert.
+## KONTEXT
+Du bist ein Top-Freelancer mit ${userProfile.experience} Erfahrung, der sich auf ein Projekt bewirbt.
+Dein Ziel: Zeige in 250-300 Wörtern, dass du GENAU die richtige Person für dieses Projekt bist.
 
-## PROJEKTAUSSCHREIBUNG
-- **Titel:** ${project.title}
-- **Unternehmen:** ${project.company}
-- **Beschreibung:** ${project.description}
-- **Gesuchte Skills:** ${project.skills.join(', ')}
-- **Arbeitsort:** ${project.location}${project.remote ? ' (Remote möglich)' : ''}
-- **Projektstart:** ${project.startDate}
-- **Projektdauer:** ${project.duration}
+## PROJEKTDETAILS
+**Titel:** ${project.title}
+**Unternehmen:** ${project.company || 'Nicht angegeben'}
+**Beschreibung:** ${project.description}
 
-## FREELANCER-PROFIL
-- **Name:** ${userProfile.name}
-- **Berufserfahrung:** ${userProfile.experience}
-- **Kernkompetenzen:** ${userProfile.skills.join(', ')}
-${matchingSkills.length > 0 ? `- **Matching Skills für dieses Projekt:** ${matchingSkills.join(', ')}` : ''}
-${userProfile.customIntro ? `- **Persönlicher Stil/Intro:** ${userProfile.customIntro}` : ''}
+**Anforderungen:**
+${project.skills.length > 0 ? project.skills.map(s => `- ${s}`).join('\n') : '- Keine spezifischen Skills angegeben'}
 
-## AUFGABE
-Erstelle ein überzeugendes Bewerbungsanschreiben für dieses Freelance-Projekt.
+**Rahmenbedingungen:**
+- Ort: ${project.location || 'Nicht angegeben'}${project.remote ? ' (Remote möglich ✓)' : ''}
+- Start: ${project.startDate || 'Flexibel'}
+- Dauer: ${project.duration || 'Nicht angegeben'}
+${project.workload ? `- Auslastung: ${project.workload}` : ''}
 
-### STRUKTUR (max. 250-300 Wörter)
+## DEIN PROFIL
+**Name:** ${userProfile.name}
+**Erfahrung:** ${userProfile.experience}
 
-**1. ANREDE**
-- "Guten Tag," oder "Hallo,"
-- NICHT "Sehr geehrte Damen und Herren" (zu steif für Freelancer-Kontext)
+**Deine Skills:**
+${matchingSkills.length > 0 ? `
+🎯 **PERFEKTE MATCHES für dieses Projekt:**
+${matchingSkills.map(s => `- ${s}`).join('\n')}
+` : ''}
+${otherSkills.length > 0 ? `
+Weitere Kompetenzen: ${otherSkills.slice(0, 5).join(', ')}
+` : ''}
 
-**2. HOOK / EINLEITUNG (2-3 Sätze)**
-- Warum DIESES Projekt, DIESES Unternehmen
-- Zeige, dass du die Anforderungen verstanden hast
-- Ein konkreter Bezug zur Projektbeschreibung
+${userProfile.customIntro ? `**Dein Stil/Besonderheiten:** ${userProfile.customIntro}` : ''}
 
-**3. RELEVANTE ERFAHRUNG (3-4 Sätze)**
-- 2-3 konkrete Beispiele aus deiner Erfahrung, die zu den Requirements passen
-- Erwähne spezifische Technologien/Tools aus der Stellenbeschreibung
-- Zahlen und Ergebnisse wo möglich
-${project.remote ? '- Erwähne Remote-Erfahrung, da Remote möglich ist' : ''}
+---
 
-**4. MEHRWERT (2-3 Sätze)**
-- Was bringst DU mit, das andere nicht haben?
-- Wie trägst du zum Projekterfolg bei?
-- Besondere Stärken oder Alleinstellungsmerkmale
+## SCHREIB-ANLEITUNG
 
-**5. ABSCHLUSS & CALL-TO-ACTION (1-2 Sätze)**
-- Verfügbarkeit erwähnen
-- Interesse an einem Gespräch signalisieren
-- Konkret, nicht vage
+### STRUKTUR (exakt einhalten!)
 
-**6. GRUßFORMEL**
-- "Viele Grüße" oder "Beste Grüße"
-- ${userProfile.name}
+**[ANREDE]** (1 Zeile)
+→ "Guten Tag," oder "Hallo," (NIEMALS "Sehr geehrte...")
 
-### TON & STIL
-- Professionell aber authentisch
-- Selbstbewusst ohne überheblich zu sein
-- Konkrete Achievements statt generischer Aussagen
-- Aktive Verben, Präsens für Aktuelles
+**[HOOK]** (2-3 Sätze)
+→ Warum passt DIESES Projekt perfekt zu dir?
+→ Zeige, dass du die Anforderungen verstanden hast
+→ Ein spezifischer Bezug zur Projektbeschreibung
 
-### VERMEIDE UNBEDINGT
-- ❌ "Hiermit bewerbe ich mich..." (langweilig)
-- ❌ "Ich habe mit großem Interesse..." (Floskel)
-- ❌ "Ich bin überzeugt, dass..." (Floskel)
-- ❌ "Ich freue mich auf Ihre Rückmeldung" (Floskel)
-- ❌ Worthülsen wie "teamfähig", "motiviert" ohne Beleg
-- ❌ Wiederholung aller Skills (nur relevante!)
-- ❌ Konjunktive ("könnte", "würde") - schreibe aktiv!
-- ❌ Passive Formulierungen
+**[ERFAHRUNG & SKILLS]** (4-5 Sätze)
+→ Erwähne ${matchingSkills.length > 0 ? `EXPLIZIT diese Skills: ${matchingSkills.slice(0, 3).join(', ')}` : 'die wichtigsten Projekt-Skills'}
+→ 2-3 konkrete Beispiele aus deiner Erfahrung
+→ Zahlen/Ergebnisse wenn möglich ("5+ Jahre", "20+ Projekte", etc.)
+${project.remote ? '→ Betone deine Remote-Erfahrung!' : ''}
 
-### QUALITY CHECKS
-Prüfe vor Ausgabe:
-- [ ] Firmenname korrekt
-- [ ] Konkrete Beispiele statt Floskeln
-- [ ] Nur relevante Skills für DIESES Projekt erwähnt
-- [ ] Aktive Verben verwendet
-- [ ] Max. 300 Wörter
+**[MEHRWERT]** (2-3 Sätze)
+→ Was macht DICH besonders?
+→ Wie hilfst du dem Projekt zum Erfolg?
+→ Alleinstellungsmerkmal
 
-## OUTPUT
-Gib NUR das fertige Anschreiben aus - keine Kommentare, keine Erklärungen, kein "Hier ist dein Anschreiben".
-Beginne direkt mit der Anrede.
+**[CALL-TO-ACTION]** (1-2 Sätze)
+→ Verfügbarkeit: "Ich bin ab [Datum] verfügbar" oder "Ich kann sofort starten"
+→ "Gerne bespreche ich die Details in einem kurzen Call"
+
+**[VERABSCHIEDUNG]** (2 Zeilen)
+→ "Viele Grüße" oder "Beste Grüße"
+→ ${userProfile.name}
+
+---
+
+### STIL-REGELN (STRIKT befolgen!)
+
+✅ **MACH DAS:**
+- Aktive Verben: "Ich entwickle", "Ich habe umgesetzt", "Ich bringe mit"
+- Konkrete Beispiele: "In meinem letzten Projekt mit React und TypeScript..."
+- Selbstbewusst: "Ich bin überzeugt, dass meine Erfahrung mit X perfekt passt"
+- Persönlich: Zeige Begeisterung für das Projekt
+- Zahlen: "10+ Jahre", "50+ Projekte", "Team von 5 Entwicklern geleitet"
+
+❌ **VERMEIDE UNBEDINGT:**
+- "Hiermit bewerbe ich mich..." ← Langweilig!
+- "Ich habe mit großem Interesse..." ← Floskel!
+- "Ich würde mich freuen..." ← Konjunktiv! (Nutze "Ich freue mich")
+- "teamfähig", "motiviert", "flexibel" ← Ohne Beleg wertlos!
+- Alle Skills auflisten ← Nur die relevanten!
+- Passive Formulierungen ← Immer aktiv!
+
+---
+
+### QUALITÄTSKONTROLLE
+
+Prüfe VOR der Ausgabe:
+1. ✓ Firmenname korrekt (${project.company || 'falls angegeben'})
+2. ✓ Mindestens 2 konkrete Beispiele
+3. ✓ Matching Skills erwähnt: ${matchingSkills.length > 0 ? matchingSkills.slice(0, 3).join(', ') : 'Projekt-Skills'}
+4. ✓ Keine Floskeln oder Konjunktive
+5. ✓ 250-300 Wörter
+6. ✓ Aktive Verben durchgehend
+
+---
+
+## OUTPUT-FORMAT
+
+Gib NUR das fertige Anschreiben aus.
+KEINE Kommentare, KEINE Erklärungen, KEIN "Hier ist dein Anschreiben".
+Beginne DIREKT mit "Guten Tag," oder "Hallo,".
     `.trim();
   }
 }

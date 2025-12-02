@@ -48,7 +48,9 @@ export class ClaudeProvider extends AIService {
           headers: headers,
           body: JSON.stringify({
             model: model,
-            max_tokens: 4000,
+            max_tokens: 2000, // Ausreichend für 300 Wörter Anschreiben
+            temperature: 0.8, // Höher für kreativere Texte
+            system: 'Du bist ein Top-Bewerbungscoach für Freelancer in der Tech-Branche. Du schreibst präzise, überzeugende Anschreiben ohne Floskeln. Du kennst den deutschen Freelancer-Markt und weißt, wie man sich auf Plattformen wie freelancermap.de erfolgreich bewirbt.',
             messages: [{
               role: 'user',
               content: prompt

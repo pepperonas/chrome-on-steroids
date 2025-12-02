@@ -25,15 +25,17 @@ export class ChatGPTProvider extends AIService {
           messages: [
             {
               role: 'system',
-              content: 'Du bist ein Experte für professionelle Bewerbungsanschreiben im IT-Bereich.'
+              content: 'Du bist ein Top-Bewerbungscoach für Freelancer in der Tech-Branche. Du schreibst präzise, überzeugende Anschreiben ohne Floskeln. Du kennst den deutschen Freelancer-Markt und weißt, wie man sich auf Plattformen wie freelancermap.de erfolgreich bewirbt.'
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          temperature: 0.7,
-          max_tokens: 1000
+          temperature: 0.8, // Höher für kreativere, persönlichere Texte
+          max_tokens: 1500, // Mehr Tokens für ausführlichere Anschreiben
+          presence_penalty: 0.3, // Reduziert Wiederholungen
+          frequency_penalty: 0.3 // Fördert Vielfalt im Wortschatz
         })
       });
 

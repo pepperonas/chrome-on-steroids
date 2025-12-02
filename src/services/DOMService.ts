@@ -35,98 +35,134 @@ export class DOMService {
       const modal = document.querySelector('.modal.search-result-modal.show');
       if (!modal) return null;
 
-      // Titel aus dem Modal-Header
+      Logger.info('Extracting project data from modal...');
+
+      // Titel aus dem Modal-Header (mehrere Versuche)
       const titleElement = modal.querySelector('.modal-header h5') ||
         modal.querySelector('.modal-title') ||
         modal.querySelector('h5') ||
-        modal.querySelector('h4');
+        modal.querySelector('h4') ||
+        modal.querySelector('h3');
       
-      // Projektbeschreibung aus dem Modal
-      const descriptionElement = modal.querySelector('.project-description') ||
+      // Projektbeschreibung - erweiterte Suche
+      let descriptionElement = modal.querySelector('.project-description') ||
         modal.querySelector('.description') ||
         modal.querySelector('[class*="description"]') ||
-        modal.querySelector('.modal-body p');
+        modal.querySelector('.modal-body .project-body-description');
 
-      // Firma/Unternehmen
+      // Firma/Unternehmen - erweiterte Suche
       const companyElement = modal.querySelector('.company-name') ||
         modal.querySelector('[class*="company"]') ||
-        modal.querySelector('.client-name');
+        modal.querySelector('.client-name') ||
+        modal.querySelector('[data-testid="company"]');
 
-      // Skills/Tags
-      const badgeElements = modal.querySelectorAll('.badge') ||
-        modal.querySelectorAll('.skill-badge') ||
-        modal.querySelectorAll('[class*="skill"]');
+      // Skills/Tags - robustere Extraktion
+      const badgeElements = modal.querySelectorAll('.badge, .skill-badge, [class*="badge"], [class*="skill"]');
 
       // Ort
       const locationElement = modal.querySelector('[class*="location"]') ||
         modal.querySelector('[class*="city"]') ||
-        modal.querySelector('.location');
+        modal.querySelector('[data-testid="location"]');
 
       // Remote
-      const remoteElement = modal.querySelector('[class*="remote"]');
       const modalText = modal.textContent || '';
-      const remote = remoteElement?.textContent?.toLowerCase().includes('remote') ||
-        modalText.toLowerCase().includes('remote') || false;
+      const remote = modalText.toLowerCase().includes('remote') || 
+                     modalText.toLowerCase().includes('100%') && modalText.toLowerCase().includes('home');
 
       // Dauer
       const durationElement = modal.querySelector('[class*="duration"]') ||
-        modal.querySelector('.duration');
+        modal.querySelector('[data-testid="duration"]');
 
       // Startdatum
       const startElement = modal.querySelector('[class*="start"]') ||
-        modal.querySelector('[class*="beginning"]');
+        modal.querySelector('[class*="beginning"]') ||
+        modal.querySelector('[data-testid="start"]');
+
+      // Auslastung
+      const workloadMatch = modalText.match(/(\d+)%\s*(Auslastung|Workload)/i);
+      const workload = workloadMatch ? workloadMatch[1] + '%' : '';
 
       // Extrahiere Werte
       const title = titleElement?.textContent?.trim() || '';
       
-      // Beschreibung: Versuche verschiedene Quellen
+      // Beschreibung: Intelligentere Extraktion
       let description = descriptionElement?.textContent?.trim() || '';
-      if (!description) {
+      if (!description || description.length < 50) {
         // Versuche aus dem Modal-Body mehr Text zu holen
         const modalBody = modal.querySelector('.modal-body');
         if (modalBody) {
-          // Sammle alle Textinhalte außer Buttons und Inputs
-          const textNodes = modalBody.querySelectorAll('p, div:not(.buttons):not(.form-group)');
-          description = Array.from(textNodes)
-            .map(el => el.textContent?.trim())
-            .filter(text => text && text.length > 20)
-            .join(' ');
+          // Sammle alle relevanten Textinhalte
+          const paragraphs: string[] = [];
+          modalBody.querySelectorAll('p, div[class*="description"], div[class*="text"]').forEach(el => {
+            const text = el.textContent?.trim();
+            if (text && text.length > 30 && 
+                !text.includes('Anschreiben') && 
+                !text.includes('Bewerbung') &&
+                !text.toLowerCase().includes('button')) {
+              paragraphs.push(text);
+            }
+          });
+          
+          if (paragraphs.length > 0) {
+            description = paragraphs.join('\n\n');
+          }
         }
       }
 
       const company = companyElement?.textContent?.trim() || '';
       
+      // Skills: Intelligentere Filterung
       const skills = Array.from(badgeElements)
         .map(badge => badge.textContent?.trim() || '')
-        .filter(skill => skill && 
-          !skill.includes('Top-Projekt') && 
-          !skill.includes('Remote') &&
-          skill.length > 1);
+        .filter(skill => {
+          if (!skill || skill.length < 2) return false;
+          
+          // Filtere irrelevante Badges
+          const irrelevant = [
+            'Top-Projekt', 'Remote', 'Neu', 'Featured', 
+            'Premium', 'Dringend', 'Favorit', 'Gespeichert'
+          ];
+          return !irrelevant.some(term => skill.includes(term));
+        })
+        .filter((skill, index, arr) => arr.indexOf(skill) === index); // Duplikate entfernen
 
       const location = locationElement?.textContent?.trim() || '';
       const duration = durationElement?.textContent?.trim() || '';
       const startDate = startElement?.textContent?.trim() || '';
 
-      // Mindestens Titel oder Beschreibung sollte vorhanden sein
-      if (!title && !description) {
+      // Validierung: Mindestens Titel ODER aussagekräftige Beschreibung
+      if (!title && (!description || description.length < 50)) {
+        Logger.warn('Modal data insufficient: no title and no meaningful description');
         return null;
       }
 
-      // Generiere eine ID basierend auf Titel
-      const projectId = title ? title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 50) : 'modal-project';
+      // Generiere eine ID basierend auf Titel oder Zeitstempel
+      const projectId = title 
+        ? title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 50) 
+        : `modal-project-${Date.now()}`;
 
-      return {
+      const projectData = {
         id: projectId,
-        title: title || 'Projekt aus Modal',
-        description: description || 'Keine Beschreibung verfügbar',
+        title: title || 'Freelance-Projekt',
+        description: description || 'Keine detaillierte Beschreibung verfügbar',
         company,
         location,
         remote,
         skills,
         startDate,
         duration,
-        workload: ''
+        workload
       };
+
+      Logger.info('Modal project data extracted:', {
+        hasTitle: !!title,
+        hasDescription: !!description,
+        descriptionLength: description.length,
+        skillsCount: skills.length,
+        hasCompany: !!company
+      });
+
+      return projectData;
 
     } catch (error) {
       Logger.error('Error extracting project data from modal:', error);
@@ -222,10 +258,46 @@ export class DOMService {
   }
 
   /**
+   * Bereinigt den generierten Text
+   */
+  private static cleanGeneratedText(text: string): string {
+    let cleaned = text.trim();
+    
+    // Entferne Markdown-Formatierung
+    cleaned = cleaned.replace(/\*\*/g, ''); // Fett
+    cleaned = cleaned.replace(/\*/g, '');   // Kursiv
+    cleaned = cleaned.replace(/^#+\s+/gm, ''); // Überschriften
+    
+    // Entferne Meta-Kommentare (falls AI sie trotzdem hinzufügt)
+    cleaned = cleaned.replace(/^(Hier ist|Gerne erstelle ich|Anbei finden Sie).*$/gm, '');
+    
+    // Entferne mehrfache Leerzeilen
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    
+    // Entferne führende/trailing Leerzeichen pro Zeile
+    cleaned = cleaned.split('\n').map(line => line.trim()).join('\n');
+    
+    // Stelle sicher, dass es mit Anrede beginnt
+    if (!cleaned.match(/^(Guten Tag|Hallo|Sehr geehrte)/i)) {
+      Logger.warn('Generated text does not start with greeting, keeping as is');
+    }
+    
+    return cleaned.trim();
+  }
+
+  /**
    * Fügt generierten Text in das Anschreibenfeld ein
    */
   static insertCoverLetter(text: string): boolean {
     try {
+      // Bereinige den Text
+      const cleanedText = this.cleanGeneratedText(text);
+      
+      Logger.info('Inserting cover letter', { 
+        originalLength: text.length, 
+        cleanedLength: cleanedText.length 
+      });
+
       // Try multiple selectors for the cover letter textarea
       const textarea = document.querySelector('#cover-letter') as HTMLTextAreaElement ||
         document.querySelector('textarea[name="coverLetter"]') as HTMLTextAreaElement ||
@@ -239,25 +311,41 @@ export class DOMService {
         throw new Error('Anschreibenfeld nicht gefunden');
       }
 
-      textarea.value = text;
+      // React-kompatible Wert-Setzung
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )?.set;
+
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call(textarea, cleanedText);
+      } else {
+        textarea.value = cleanedText;
+      }
 
       // Trigger input event für React/Vue Kompatibilität
-      const inputEvent = new Event('input', { bubbles: true });
+      const inputEvent = new Event('input', { bubbles: true, cancelable: true });
       textarea.dispatchEvent(inputEvent);
 
       // Trigger change event
-      const changeEvent = new Event('change', { bubbles: true });
+      const changeEvent = new Event('change', { bubbles: true, cancelable: true });
       textarea.dispatchEvent(changeEvent);
 
-      // Also try setting value property directly for React
-      Object.defineProperty(textarea, 'value', {
-        writable: true,
-        value: text
+      // Trigger React-spezifische Events
+      const reactInputEvent = new InputEvent('input', { 
+        bubbles: true, 
+        cancelable: true,
+        data: cleanedText
       });
+      textarea.dispatchEvent(reactInputEvent);
 
       // Focus the textarea
       textarea.focus();
+      
+      // Setze Cursor ans Ende
+      textarea.setSelectionRange(cleanedText.length, cleanedText.length);
 
+      Logger.info('✅ Cover letter inserted successfully');
       return true;
     } catch (error) {
       Logger.error('Error inserting cover letter:', error);
