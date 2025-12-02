@@ -9,27 +9,37 @@ Generierung des **idealen Bewerbungsanschreibens** für Freelancer-Projekte auf 
 
 ### Flow (Button → Anschreiben):
 ```
-1. User klickt "ApplyAI" Button
+1. User klickt "ApplyAI" Button (💎)
    ↓
 2. handleGenerate() → ApplicationController.generateAndInsertApplication()
    ↓
 3. DOMService.extractProjectData()
-   → Versucht Modal (für Bewerbungsdialog)
+   → Priorisiert Modal (für Bewerbungsdialog)
    → Fallback: Projektdetailseite
    ↓
 4. StorageService.load<UserProfile>()
-   → Lädt Name, Skills, Erfahrung, Custom Intro
+   → Lädt Name, Skills, Erfahrung, Custom Intro, Portfolio
    ↓
 5. AIService.buildPrompt(project, userProfile)
    → Erstellt Meta-Prompt mit allen Daten
+   → Inkludiert Portfolio-Projekte (falls vorhanden)
+   → Skill-Matching zwischen Projekt und Profil
    ↓
 6. ChatGPTProvider / ClaudeProvider
    → API Call mit optimierten Parametern
+   → Anti-Hallucination System Prompt
    ↓
-7. DOMService.insertCoverLetter(text)
-   → Bereinigt Text
+7. Post-Generation Validation
+   → validateCoverLetterAgainstProfile()
+   → Prüft auf erfundene Inhalte
+   ↓
+8. DOMService.insertCoverLetter(text)
+   → cleanGeneratedText() (Markdown-Bereinigung)
    → Fügt in Textarea ein (React-kompatibel)
-   → Triggert Events
+   → Triggert Events (input, change, blur)
+   ↓
+9. LoggingService.saveLog()
+   → Speichert alle Parameter für Optimierung
 ```
 
 ---
@@ -67,7 +77,7 @@ Weitere Kompetenzen: Node.js, Docker, ...
 ## SCHREIB-ANLEITUNG
 
 ### STRUKTUR (exakt einhalten!)
-[ANREDE] → [HOOK] → [ERFAHRUNG & SKILLS] → [MEHRWERT] → [CALL-TO-ACTION] → [VERABSCHIEDUNG]
+[ANREDE] → [HOOK] → [ERFAHRUNG & SKILLS] → [MEHRWERT] → [CALL-TO-ACTION] → [PORTFOLIO-PROJEKTE] → [VERABSCHIEDUNG]
 
 ### STIL-REGELN (STRIKT befolgen!)
 ✅ MACH DAS:
@@ -185,7 +195,45 @@ textarea.setSelectionRange(cleanedText.length, cleanedText.length);
 
 ---
 
-### 5. **ROBUSTE DATENEXTRAKTION**
+### 5. **PORTFOLIO-PROJEKTE INTEGRATION** ⭐ NEU
+
+#### Funktion:
+- User kann Portfolio-Projekte im Popup eingeben
+- Projekte werden **verpflichtend** vor der Verabschiedung eingefügt
+- Format: `- projektname.de - Beschreibung (Technologien)`
+
+#### Prompt-Integration:
+```markdown
+**[PORTFOLIO-PROJEKTE]** (PFLICHT - 2-4 Zeilen)
+→ WICHTIG: Füge IMMER diesen Abschnitt ein!
+→ Format: "Gerne zeige ich Ihnen auch einige meiner Projekte:"
+→ Verwende GENAU diese Portfolio-Projekte:
+  - mxster.de - Music Quiz App (React, TypeScript)
+  - berlinometer.de - Berlin Events Platform
+→ Füge eine Leerzeile vor diesem Abschnitt ein
+```
+
+#### Beispiel-Output:
+```
+Ich kann sofort starten und freue mich auf ein Gespräch.
+
+Gerne zeige ich Ihnen auch einige meiner Projekte:
+- mxster.de - Music Quiz App (React, TypeScript)
+- berlinometer.de - Berlin Events Platform
+
+Viele Grüße
+Martin Pfeffer
+```
+
+**Verbesserungen:**
+- ✅ Portfolio wird immer eingefügt (wenn ausgefüllt)
+- ✅ Klare Position: Nach CTA, vor Verabschiedung
+- ✅ Professionelle Formatierung mit Leerzeilen
+- ✅ Gespeichert in UserProfile und exportierbar
+
+---
+
+### 6. **ROBUSTE DATENEXTRAKTION**
 
 #### Modal-Extraktion (Neu):
 ```typescript
@@ -219,19 +267,24 @@ const workloadMatch = modalText.match(/(\d+)%\s*(Auslastung|Workload)/i);
 
 ---
 
-## 📈 Erwartete Verbesserungen
+## 📈 Erreichte Verbesserungen
 
 ### Qualität des Anschreibens:
-- ✅ **Relevanter**: Fokus auf passende Skills
-- ✅ **Konkreter**: Mehr Beispiele, weniger Floskeln
+- ✅ **Relevanter**: Fokus auf passende Skills durch Skill-Matching
+- ✅ **Konkreter**: Mehr Beispiele, weniger Floskeln durch Anti-Floskel-Regeln
 - ✅ **Persönlicher**: Höhere Temperature, besserer Ton
-- ✅ **Strukturierter**: Klare Abschnitte
-- ✅ **Professioneller**: Keine Markdown-Artefakte
+- ✅ **Strukturierter**: Klare Abschnitte (Anrede → Hook → Erfahrung → Mehrwert → CTA → Portfolio → Verabschiedung)
+- ✅ **Professioneller**: Keine Markdown-Artefakte durch Post-Processing
+- ✅ **Wahrheitsgetreu**: Anti-Hallucination-Regeln verhindern erfundene Inhalte
+- ✅ **Portfolio-Integration**: Optionale Projekte werden vor Verabschiedung eingefügt
 
 ### Technische Stabilität:
-- ✅ **Robuster**: Bessere Modal-Erkennung
-- ✅ **Kompatibler**: React/Vue Events
+- ✅ **Robuster**: Bessere Modal-Erkennung mit Fallbacks
+- ✅ **Kompatibler**: React/Vue Events + keine DOM-Konflikte
 - ✅ **Zuverlässiger**: Mehr Fallbacks bei Datenextraktion
+- ✅ **Intelligent**: Erkennt Inline-Formulare vs. Modal-Formulare
+- ✅ **Logging**: Alle Parameter werden für Optimierung gespeichert
+- ✅ **Validierung**: Post-Generation Check gegen erfundene Inhalte
 
 ---
 
@@ -247,15 +300,16 @@ const workloadMatch = modalText.match(/(\d+)%\s*(Auslastung|Workload)/i);
 1. Gehe zu freelancermap.de/projekte
 2. Klicke auf "Bewerben" bei einem Projekt
 3. Modal öffnet sich mit Anschreiben-Feld
-4. "ApplyAI" Button sollte erscheinen
+4. "ApplyAI" Button sollte erscheinen (💎 neben "Text generieren")
 5. Klicke "ApplyAI"
 6. **Erwartung:**
-   - Loading-State wird angezeigt
+   - Loading-State wird angezeigt (Spinner-Icon)
    - Nach 3-10 Sekunden: Anschreiben erscheint
    - Text ist sauber formatiert (keine Markdown-Zeichen)
    - Beginnt mit "Guten Tag," oder "Hallo,"
    - Erwähnt passende Skills aus dem Projekt
    - 250-300 Wörter
+   - Falls Portfolio ausgefüllt: Portfolio-Projekte vor Verabschiedung
    - Endet mit "Viele Grüße\n[Dein Name]"
 
 #### Szenario 2: Projektdetailseite
@@ -303,12 +357,17 @@ const workloadMatch = modalText.match(/(\d+)%\s*(Auslastung|Workload)/i);
 3. **Quality Checklist im Prompt**: AI prüft selbst
 4. **Post-Processing**: Bereinigt AI-Artefakte zuverlässig
 5. **Multiple Event-Trigger**: React erkennt Änderungen
+6. **Anti-Hallucination**: Strikte Regeln verhindern erfundene Inhalte
+7. **Portfolio-Integration**: Optional, aber immer eingefügt wenn vorhanden
+8. **Inline vs. Modal Detection**: Intelligente Formular-Erkennung
 
 ### Was zu beachten ist:
 1. **Modal-Struktur kann variieren**: Viele Fallback-Selektoren nötig
 2. **AI ist kreativ**: Manchmal ignoriert sie Anweisungen → Post-Processing wichtig
 3. **React Value-Setting**: Native Setter ist der Schlüssel
 4. **Logging ist essentiell**: Für Debugging und User-Support
+5. **React DOM-Manipulation**: Button nur neben "Text generieren" platzieren, nicht im React-Tree
+6. **Extension Context**: Bei Reload muss Seite neu geladen werden
 
 ---
 
@@ -321,11 +380,21 @@ const workloadMatch = modalText.match(/(\d+)%\s*(Auslastung|Workload)/i);
 4. **Anschreiben-Historie**: Letzte 5 Anschreiben speichern
 5. **Edit-Modus**: Anschreiben vor Einfügen bearbeiten
 6. **Multi-Language**: Englische Anschreiben für internationale Projekte
+7. **Portfolio-Relevanz**: AI entscheidet, welche Projekte am relevantesten sind
+8. **Skill-Weighting**: Wichtige Skills stärker betonen
 
 ### Performance:
 1. **Caching**: Häufig verwendete Prompts cachen
 2. **Streaming**: Text während Generierung anzeigen
 3. **Parallel Requests**: Mehrere Modelle gleichzeitig testen
+
+### Bereits implementiert ✅:
+- ✅ Portfolio-Projekte Integration
+- ✅ Anti-Hallucination System
+- ✅ Logging & Export
+- ✅ Settings Export/Import
+- ✅ Inline & Modal Form Detection
+- ✅ Post-Generation Validation
 
 ---
 

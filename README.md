@@ -4,14 +4,37 @@ Chrome Extension für automatische Generierung von Bewerbungsanschreiben auf fre
 
 ## Features
 
-- ✅ Automatische Erkennung von Projektseiten und Modal-Dialogen
-- ✅ KI-gestützte Anschreiben-Generierung (ChatGPT & Claude)
-- ✅ Intelligenter Button im Bewerbungsmodal (neben "Text generieren")
-- ✅ Automatisches Skill-Matching zwischen Projekt und Profil
-- ✅ Optimierte Prompts für überzeugende Freelancer-Bewerbungen
+### 🤖 KI-Integration
+- ✅ Unterstützung für **ChatGPT** (OpenAI) und **Claude** (Anthropic)
+- ✅ Separate API Keys für beide Provider
 - ✅ Automatisches Modell-Fallback bei API-Fehlern
-- ✅ Separate API Keys für ChatGPT und Claude
+- ✅ Optimierte Prompts mit Anti-Hallucination-Regeln
+
+### 🎯 Smart Button Placement
+- ✅ **Projektdetailseiten**: Button neben "Text generieren" im Formular
+- ✅ **Projektlisten**: Button neben "Text generieren" im Modal
+- ✅ Automatische Erkennung des Kontexts
+- ✅ Keine React-Konflikte (saubere DOM-Manipulation)
+
+### 📝 Intelligente Anschreiben-Generierung
+- ✅ Automatisches Skill-Matching zwischen Projekt und Profil
+- ✅ Validierung gegen erfundene Inhalte
+- ✅ Strukturierte Anschreiben (Anrede, Hook, Erfahrung, Mehrwert, CTA, Portfolio, Verabschiedung)
+- ✅ Portfolio-Projekte optional einfügbar
+- ✅ Markdown-Bereinigung und Post-Processing
+
+### 📊 Logging & Export
+- ✅ Automatisches Logging aller Generierungen
+- ✅ Export/Import von Einstellungen als JSON
+- ✅ Export von Generierungs-Logs
+- ✅ Live-Statistiken (Erfolgsrate, Durchschnittszeit)
+
+### 🛠️ Technisch
 - ✅ TypeScript mit SOLID-Prinzipien
+- ✅ Webpack für optimales Bundling
+- ✅ Automatische Versionierung (Patch-Increment)
+- ✅ Chrome Storage API für Settings
+- ✅ Umfassende Fehlerbehandlung
 
 ## Installation
 
@@ -67,12 +90,25 @@ Die Extension ist dann im `dist` Ordner bereit für die Distribution.
 
 #### Profil einrichten:
 1. Fülle dein Profil aus:
-   - Name (Pflicht)
-   - E-Mail (Pflicht)
-   - Telefon (optional)
-   - Skills - kommagetrennt (Pflicht)
-   - Berufserfahrung (Pflicht)
-   - Persönliche Intro (optional)
+   - **Name** (Pflicht)
+   - **E-Mail** (Pflicht)
+   - **Telefon** (optional)
+   - **Skills** - kommagetrennt (Pflicht)
+     - Beispiel: `Java, Spring Boot, React, TypeScript, MySQL`
+   - **Berufserfahrung** (Pflicht)
+     - Detaillierte Beschreibung deiner Erfahrung
+     - Firmen, Rollen, Technologien, Zeiträume
+   - **Persönliche Intro** (optional)
+     - Individueller Einleitungstext für Bewerbungen
+   - **Portfolio-Projekte** (optional) ⭐ NEU
+     - Format: `- projektname.de - Beschreibung (Technologien)`
+     - Wird vor der Verabschiedung im Anschreiben eingefügt
+     - Beispiel:
+       ```
+       - mxster.de - Music Quiz App (React, TypeScript)
+       - berlinometer.de - Berlin Events Platform
+       - github.com/username/project - Beschreibung
+       ```
 2. Klicke auf **"Speichern"**
 
 #### Provider wechseln:
@@ -84,11 +120,21 @@ Die Extension ist dann im `dist` Ordner bereit für die Distribution.
 
 ### 2. Bewerbung generieren
 
+#### Auf Projektdetailseiten (`/projekt/*`)
 1. Navigiere zu einer Projektseite auf freelancermap.de
-2. Klicke auf **"Bewerben"** um den Bewerbungsdialog zu öffnen
+2. Scrolle zum Bewerbungsformular (oder klicke "Bewerben")
 3. Der **"ApplyAI"** Button (mit Diamant-Icon 💎) erscheint automatisch neben dem "Text generieren" Button
 4. Klicke auf **"ApplyAI"** um das Anschreiben zu generieren
 5. Das generierte Anschreiben wird automatisch in das Textfeld eingefügt
+
+#### Auf Projektlisten (`/projektboerse.html`)
+1. Klicke auf ein Projekt in der Liste
+2. Klicke auf **"Bewerben"** im Modal-Dialog
+3. Der **"ApplyAI"** Button erscheint neben dem "Text generieren" Button
+4. Klicke auf **"ApplyAI"** um das Anschreiben zu generieren
+5. Das generierte Anschreiben wird automatisch eingefügt
+
+**Hinweis:** Der Button erscheint nur, wenn ein Bewerbungsformular mit Anschreiben-Feld vorhanden ist.
 
 ### 3. Einstellungen exportieren/importieren
 
@@ -108,7 +154,7 @@ Die Extension ist dann im `dist` Ordner bereit für die Distribution.
 - ✅ API Keys (ChatGPT & Claude)
 - ✅ Ausgewählte Modelle
 - ✅ Aktiver Provider
-- ✅ Benutzerprofil (Name, E-Mail, Skills, Erfahrung, etc.)
+- ✅ Benutzerprofil (Name, E-Mail, Skills, Erfahrung, Portfolio, etc.)
 
 **Anwendungsfälle:**
 - 💾 Backup deiner Einstellungen
@@ -216,6 +262,64 @@ Erstelle einen API Key auf [console.anthropic.com](https://console.anthropic.com
    - Gehe zu `chrome://extensions/`
    - Klicke auf "Aktualisieren" (🔄) bei der ApplyAI Extension
    - Versuche die Validierung erneut
+
+### Button erscheint nicht
+
+1. **Prüfe die Seite:**
+   - Der Button erscheint nur auf `freelancermap.de/projekt/*` oder in Bewerbungsmodalen
+   - Das Anschreiben-Textfeld muss vorhanden sein
+
+2. **Extension-Kontext ungültig:**
+   - Falls "⚠️ Seite neu laden" angezeigt wird, lade die Seite neu (F5)
+   - Dies passiert, wenn die Extension während der Nutzung aktualisiert wurde
+
+3. **Browser-Konsole prüfen:**
+   - Öffne die Konsole (F12 → Console)
+   - Suche nach `[ApplyAI]` Meldungen
+   - Fehlermeldungen zeigen das Problem
+
+### Portfolio wird nicht eingefügt
+
+1. **Prüfe das Profil:**
+   - Öffne die Extension (Klick auf Icon)
+   - Scrolle zu "Portfolio-Projekte"
+   - Stelle sicher, dass das Feld ausgefüllt ist
+   - Klicke auf "Speichern"
+
+2. **Format prüfen:**
+   - Jedes Projekt in einer neuen Zeile
+   - Format: `- projektname.de - Beschreibung (Technologien)`
+   - Beispiel:
+     ```
+     - mxster.de - Music Quiz App (React, TypeScript)
+     - berlinometer.de - Berlin Events Platform
+     ```
+
+3. **Generierung neu starten:**
+   - Lösche das Textfeld
+   - Klicke erneut auf "ApplyAI"
+   - Portfolio sollte jetzt vor der Verabschiedung erscheinen
+
+### React Error #418 (Minified)
+
+**Problem:** Die Extension versucht, React-DOM zu manipulieren.
+
+**Lösung:** 
+- Dieser Fehler sollte nicht mehr auftreten (ab Version 0.0.48+)
+- Die Extension platziert den Button nur noch neben "Text generieren", nicht mehr als Floating Button
+- Falls der Fehler weiterhin auftritt:
+  1. Extension neu laden (`chrome://extensions/` → 🔄)
+  2. Seite neu laden (F5)
+  3. Browser-Konsole prüfen und Fehler melden
+
+### Extension Context Invalidated
+
+**Problem:** Die Extension wurde während der Nutzung neu geladen.
+
+**Lösung:**
+- Lade die Seite neu (F5)
+- Der Button zeigt "⚠️ Seite neu laden" mit Tooltip
+- Nach dem Neuladen funktioniert alles wieder normal
 
 ## Lizenz
 
