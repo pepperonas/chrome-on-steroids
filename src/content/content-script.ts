@@ -121,83 +121,109 @@ class ApplyAIAssistant {
       e.preventDefault();
       e.stopPropagation();
       
-      Logger.info('Floating Button geklickt - öffne Modal');
+      Logger.info('Floating Button geklickt - prüfe Formular');
       
       // Zeige Loading-State
       const originalHTML = floatingButton.innerHTML;
       floatingButton.innerHTML = `
         <i class="far fa-spinner fa-spin"></i>
-        <span>Öffne Modal...</span>
+        <span>Generiere...</span>
       `;
       floatingButton.style.pointerEvents = 'none';
       
-      // Klicke auf "Bewerben" Button um Modal zu öffnen
-      const contactButton = document.querySelector('[data-testid="contact-button"]') as HTMLElement;
-      if (!contactButton) {
-        Logger.error('Bewerben-Button nicht gefunden');
-        floatingButton.innerHTML = originalHTML;
-        floatingButton.style.pointerEvents = 'auto';
-        return;
-      }
-      
-      contactButton.click();
-      Logger.info('Bewerben-Button geklickt');
-      
-      // Warte bis Modal geöffnet ist
-      let attempts = 0;
-      const maxAttempts = 50; // 5 Sekunden
-      
-      const checkModal = setInterval(async () => {
-        attempts++;
-        
-        const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
+      try {
+        // Prüfe ob Anschreiben-Feld bereits auf der Seite ist (Projektdetailseite)
         const coverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
         
-        if (modal && coverLetterField && modal.contains(coverLetterField)) {
-          clearInterval(checkModal);
-          Logger.info('Modal geöffnet, starte Generierung');
+        if (coverLetterField && coverLetterField.offsetParent !== null) {
+          // Formular ist bereits sichtbar auf der Seite
+          Logger.info('Formular ist bereits sichtbar, starte direkt Generierung');
           
-          // Warte kurz bis Modal vollständig geladen ist
-          await new Promise(resolve => setTimeout(resolve, 800));
+          // Scrolle zum Formular
+          coverLetterField.scrollIntoView({ behavior: 'smooth', block: 'center' });
           
-          // Prüfe ob ApplyAI Button im Modal existiert
-          const modalApplyAIButton = document.getElementById('apply-ai-generate-btn');
-          if (modalApplyAIButton) {
-            Logger.info('Klicke auf ApplyAI Button im Modal');
-            (modalApplyAIButton as HTMLElement).click();
-          } else {
-            Logger.warn('ApplyAI Button im Modal nicht gefunden, starte direkt Generierung');
-            // Direkt generieren falls Button nicht existiert
-            try {
-              const controller = new ApplicationController();
-              await controller.generateAndInsertApplication();
-              Logger.info('Generierung erfolgreich');
-            } catch (error) {
-              Logger.error('Generierung fehlgeschlagen:', error);
-            }
-          }
+          // Warte kurz für Scroll-Animation
+          await new Promise(resolve => setTimeout(resolve, 500));
           
-          // Reset Button
-          floatingButton.innerHTML = originalHTML;
-          floatingButton.style.pointerEvents = 'auto';
+          // Starte Generierung direkt
+          const controller = new ApplicationController();
+          await controller.generateAndInsertApplication();
           
-        } else if (attempts >= maxAttempts) {
-          clearInterval(checkModal);
-          Logger.error('Timeout: Modal konnte nicht geöffnet werden');
+          Logger.info('Generierung erfolgreich');
+          
+          // Erfolg anzeigen
           floatingButton.innerHTML = `
-            <i class="far fa-exclamation-triangle"></i>
-            <span>Fehler</span>
+            <i class="far fa-check"></i>
+            <span>Generiert!</span>
           `;
+          
           setTimeout(() => {
             floatingButton.innerHTML = originalHTML;
             floatingButton.style.pointerEvents = 'auto';
-          }, 3000);
+          }, 2000);
+          
+        } else {
+          // Formular nicht sichtbar, versuche Modal zu öffnen
+          Logger.info('Formular nicht sichtbar, öffne Modal');
+          
+          const contactButton = document.querySelector('[data-testid="contact-button"]') as HTMLElement;
+          if (!contactButton) {
+            throw new Error('Bewerben-Button nicht gefunden');
+          }
+          
+          contactButton.click();
+          Logger.info('Bewerben-Button geklickt');
+          
+          // Warte auf Modal
+          let attempts = 0;
+          const maxAttempts = 50;
+          
+          const checkModal = setInterval(async () => {
+            attempts++;
+            
+            const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
+            const modalCoverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
+            
+            if (modal && modalCoverLetterField && modal.contains(modalCoverLetterField)) {
+              clearInterval(checkModal);
+              Logger.info('Modal geöffnet, starte Generierung');
+              
+              await new Promise(resolve => setTimeout(resolve, 800));
+              
+              const modalApplyAIButton = document.getElementById('apply-ai-generate-btn');
+              if (modalApplyAIButton) {
+                Logger.info('Klicke auf ApplyAI Button im Modal');
+                (modalApplyAIButton as HTMLElement).click();
+              } else {
+                Logger.warn('ApplyAI Button im Modal nicht gefunden, starte direkt');
+                const controller = new ApplicationController();
+                await controller.generateAndInsertApplication();
+              }
+              
+              floatingButton.innerHTML = originalHTML;
+              floatingButton.style.pointerEvents = 'auto';
+              
+            } else if (attempts >= maxAttempts) {
+              clearInterval(checkModal);
+              throw new Error('Timeout: Modal konnte nicht geöffnet werden');
+            }
+          }, 100);
         }
-      }, 100);
+        
+      } catch (error) {
+        Logger.error('Fehler:', error);
+        floatingButton.innerHTML = `
+          <i class="far fa-exclamation-triangle"></i>
+          <span>Fehler</span>
+        `;
+        setTimeout(() => {
+          floatingButton.innerHTML = originalHTML;
+          floatingButton.style.pointerEvents = 'auto';
+        }, 3000);
+      }
     });
 
     // Füge Button direkt zu body hinzu (außerhalb React-Baum)
-    // NIEMALS in React-verwaltete Container einfügen!
     document.body.appendChild(floatingButton);
     Logger.info('ApplyAI Floating Button erstellt (außerhalb React-DOM)');
   }
