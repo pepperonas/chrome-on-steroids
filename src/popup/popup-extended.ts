@@ -24,10 +24,18 @@ export class KleinanzeigenPopupExtension {
           discountTypeSelect.value = settings.discount?.type || 'percentage';
         }
         if (discountValueInput) {
-          discountValueInput.value = settings.discount?.value?.toString() || '10';
+          discountValueInput.value = settings.discount?.value?.toString() || '15';
         }
         if (messageTemplateTextarea) {
           messageTemplateTextarea.value = settings.messageTemplate || '';
+        }
+      } else {
+        // Default-Werte setzen wenn keine Settings vorhanden
+        if (discountTypeSelect) {
+          discountTypeSelect.value = 'percentage';
+        }
+        if (discountValueInput) {
+          discountValueInput.value = '15';
         }
       }
 
@@ -76,7 +84,7 @@ export class KleinanzeigenPopupExtension {
     if (!discountTypeSelect || !discountHint) return;
 
     if (discountTypeSelect.value === 'percentage') {
-      discountHint.textContent = 'Gib 10 ein für 10% Rabatt';
+      discountHint.textContent = 'Gib 15 ein für 15% Rabatt (Standard)';
     } else {
       discountHint.textContent = 'Gib 50 ein für 50€ Rabatt';
     }
@@ -104,13 +112,13 @@ export class KleinanzeigenPopupExtension {
     const messageTemplateTextarea = document.getElementById('message-template') as HTMLTextAreaElement;
 
     if (discountTypeSelect) discountTypeSelect.value = 'percentage';
-    if (discountValueInput) discountValueInput.value = '10';
+    if (discountValueInput) discountValueInput.value = '15';
     if (messageTemplateTextarea) messageTemplateTextarea.value = '';
 
     this.updateDiscountHint();
 
     await StorageService.save('kleinanzeigen_settings', {
-      discount: { type: 'percentage', value: 10 },
+      discount: { type: 'percentage', value: 15 },
       messageTemplate: undefined,
       autoSend: false
     });
