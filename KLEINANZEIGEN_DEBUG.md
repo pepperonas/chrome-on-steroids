@@ -5,7 +5,7 @@
 ### 1. Extension neu laden
 ```
 1. Öffne chrome://extensions/
-2. Finde "ApplyAI - AI Bewerbungsassistent"
+2. Finde "Chrome On Steroids - AI Bewerbungsassistent"
 3. Klicke auf das Reload-Icon (🔄)
 ```
 
@@ -165,7 +165,7 @@ iconList.appendChild(li);
 │  │ 📧 Nachricht schreiben      │   │ ← Bestehender Button
 │  └─────────────────────────────┘   │
 │  ┌─────────────────────────────┐   │
-│  │ 💎 ApplyAI Kaufanfrage      │   │ ← UNSER Button (hier sollte er sein)
+│  │ 💎 Chrome On Steroids Kaufanfrage      │   │ ← UNSER Button (hier sollte er sein)
 │  └─────────────────────────────┘   │
 │  ┌─────────────────────────────┐   │
 │  │ ❤️ Zur Merkliste hinzufügen │   │
@@ -179,12 +179,12 @@ iconList.appendChild(li);
 
 1. **Extension deinstallieren:**
    ```
-   chrome://extensions/ → ApplyAI → Entfernen
+   chrome://extensions/ → Chrome On Steroids → Entfernen
    ```
 
 2. **Neu bauen:**
    ```bash
-   cd /Users/martin/cursor/apply-ai
+   cd /Users/martin/cursor/chrome-on-steroids
    npm run build
    ```
 

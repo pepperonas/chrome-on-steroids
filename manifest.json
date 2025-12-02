@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ApplyAI - AI Bewerbungsassistent",
-  "version": "0.0.75",
-  "description": "Automatische Generierung von Bewerbungsanschreiben für freelancermap.de und Kaufanfragen für kleinanzeigen.de",
+  "name": "Chrome On Steroids",
+  "version": "0.0.77",
+  "description": "AI-powered browser automation: Auto-generate cover letters for freelancermap.de, optimize product listings for kleinanzeigen.de, and automated purchase inquiries",
   "permissions": [
     "storage",
     "activeTab",

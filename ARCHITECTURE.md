@@ -1,8 +1,8 @@
-# ApplyAI - Modulare Architektur
+# Chrome On Steroids - Modulare Architektur
 
 ## 🏗️ Übersicht
 
-ApplyAI ist jetzt modular aufgebaut und unterstützt mehrere Plattformen:
+Chrome On Steroids ist jetzt modular aufgebaut und unterstützt mehrere Plattformen:
 
 - **FreelancerMap**: Automatische Bewerbungsanschreiben
 - **Kleinanzeigen**: Automatische Kaufanfragen mit Preisvorschlag
@@ -191,7 +191,7 @@ Das Popup wurde erweitert für beide Module:
 
 ### FreelancerMap:
 ```
-User klickt "ApplyAI" Button
+User klickt "Chrome On Steroids" Button
   → FreelancerMapController.generateAndInsertApplication()
   → FreelancerMapDOMService.extractProjectData()
   → StorageService.load(UserProfile)
@@ -202,7 +202,7 @@ User klickt "ApplyAI" Button
 
 ### Kleinanzeigen:
 ```
-User klickt "ApplyAI Kaufanfrage" Button
+User klickt "Chrome On Steroids Kaufanfrage" Button
   → KleinanzeigenDOMService.extractProductData()
   → StorageService.load(KleinanzeigenSettings)
   → MessageGenerator.generatePurchaseMessage()
@@ -215,14 +215,14 @@ User klickt "ApplyAI Kaufanfrage" Button
 ### FreelancerMap testen:
 1. Gehe zu `https://www.freelancermap.de/projektboerse.html`
 2. Klicke auf ein Projekt → "Bewerben"
-3. Button "ApplyAI" sollte neben "Text generieren" erscheinen
-4. Klicke "ApplyAI" → Anschreiben wird generiert
+3. Button "Chrome On Steroids" sollte neben "Text generieren" erscheinen
+4. Klicke "Chrome On Steroids" → Anschreiben wird generiert
 
 ### Kleinanzeigen testen:
 1. Gehe zu einer Produktseite: `https://www.kleinanzeigen.de/s-anzeige/...`
-2. Button "ApplyAI Kaufanfrage" sollte unter "Nachricht schreiben" erscheinen
+2. Button "Chrome On Steroids Kaufanfrage" sollte unter "Nachricht schreiben" erscheinen
 3. Konfiguriere Rabatt im Popup (z.B. 10%)
-4. Klicke "ApplyAI Kaufanfrage" → Nachricht wird generiert
+4. Klicke "Chrome On Steroids Kaufanfrage" → Nachricht wird generiert
 
 ## 🔐 Storage Keys
 

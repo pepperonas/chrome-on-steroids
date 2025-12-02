@@ -110,14 +110,14 @@ npm run type-check    # TypeScript Type Checking
 
 **Debugging:**
 1. Öffne Browser-Konsole (F12 → Console)
-2. Suche nach Fehlermeldungen mit `[ApplyAI]`
+2. Suche nach Fehlermeldungen mit `[Chrome On Steroids]`
 3. Die Fehlermeldungen zeigen das genaue Problem
 4. Prüfe auch den Background Service Worker (Extension-Seite → Service Worker → Inspect)
 
 ### Anschreiben wird nicht eingefügt
 - Prüfe ob du auf einer Projektseite bist (`freelancermap.de/projekt/...`)
 - Prüfe ob der Bewerbungsdialog geöffnet ist (Button "Bewerben" geklickt)
-- Prüfe ob der "ApplyAI" Button erscheint (sollte automatisch neben "Text generieren" erscheinen)
+- Prüfe ob der "Chrome On Steroids" Button erscheint (sollte automatisch neben "Text generieren" erscheinen)
 - Öffne Browser-Konsole (F12) für Debug-Informationen
 
 ### Button erscheint nicht

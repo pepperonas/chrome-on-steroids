@@ -4,9 +4,9 @@
 
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    console.log('ApplyAI Extension installed');
+    console.log('Chrome On Steroids Extension installed');
   } else if (details.reason === 'update') {
-    console.log('ApplyAI Extension updated');
+    console.log('Chrome On Steroids Extension updated');
   }
 });
 

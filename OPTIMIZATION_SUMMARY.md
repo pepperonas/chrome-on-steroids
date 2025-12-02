@@ -1,4 +1,4 @@
-# ApplyAI - Optimierungs-Zusammenfassung
+# Chrome On Steroids - Optimierungs-Zusammenfassung
 
 ## 🎯 Ziel
 Generierung des **idealen Bewerbungsanschreibens** für Freelancer-Projekte auf freelancermap.de
@@ -9,7 +9,7 @@ Generierung des **idealen Bewerbungsanschreibens** für Freelancer-Projekte auf 
 
 ### Flow (Button → Anschreiben):
 ```
-1. User klickt "ApplyAI" Button (💎)
+1. User klickt "Chrome On Steroids" Button (💎)
    ↓
 2. handleGenerate() → ApplicationController.generateAndInsertApplication()
    ↓
@@ -300,8 +300,8 @@ const workloadMatch = modalText.match(/(\d+)%\s*(Auslastung|Workload)/i);
 1. Gehe zu freelancermap.de/projekte
 2. Klicke auf "Bewerben" bei einem Projekt
 3. Modal öffnet sich mit Anschreiben-Feld
-4. "ApplyAI" Button sollte erscheinen (💎 neben "Text generieren")
-5. Klicke "ApplyAI"
+4. "Chrome On Steroids" Button sollte erscheinen (💎 neben "Text generieren")
+5. Klicke "Chrome On Steroids"
 6. **Erwartung:**
    - Loading-State wird angezeigt (Spinner-Icon)
    - Nach 3-10 Sekunden: Anschreiben erscheint
@@ -315,8 +315,8 @@ const workloadMatch = modalText.match(/(\d+)%\s*(Auslastung|Workload)/i);
 #### Szenario 2: Projektdetailseite
 1. Gehe zu einem Projekt: freelancermap.de/projekt/[id]
 2. Scrolle zum Bewerbungsformular
-3. "ApplyAI" Button sollte erscheinen
-4. Klicke "ApplyAI"
+3. "Chrome On Steroids" Button sollte erscheinen
+4. Klicke "Chrome On Steroids"
 5. **Erwartung:** Wie Szenario 1
 
 #### Szenario 3: Fehlerfall (kein Profil)
@@ -324,27 +324,27 @@ const workloadMatch = modalText.match(/(\d+)%\s*(Auslastung|Workload)/i);
 2. "Zurücksetzen" klicken (falls Daten vorhanden)
 3. Popup schließen
 4. Bewerbungsmodal öffnen
-5. "ApplyAI" klicken
+5. "Chrome On Steroids" klicken
 6. **Erwartung:**
    - Button zeigt "Fehler"
    - Konsole: "Kein Benutzerprofil gefunden..."
 
 ### Konsolen-Logs (bei Erfolg):
 ```
-[ApplyAI] Extrahiere Projektdaten...
-[ApplyAI] Projektdaten aus Modal extrahiert
-[ApplyAI] Modal project data extracted: {hasTitle: true, skillsCount: 8, ...}
-[ApplyAI] Lade Benutzerprofil...
-[ApplyAI] Benutzerprofil geladen: {name: "...", skills: 12, ...}
-[ApplyAI] Initialisiere AI-Service...
-[ApplyAI] Generiere Anschreiben mit AI...
-[ApplyAI] Generating with model: claude-3-haiku-20240307
-[ApplyAI] ✅ Generated successfully with model: claude-3-haiku-20240307
-[ApplyAI] Anschreiben generiert: {length: 1234}
-[ApplyAI] Füge Anschreiben in Textfeld ein...
-[ApplyAI] Inserting cover letter {originalLength: 1234, cleanedLength: 1200}
-[ApplyAI] ✅ Cover letter inserted successfully
-[ApplyAI] ✅ Anschreiben erfolgreich generiert und eingefügt
+[Chrome On Steroids] Extrahiere Projektdaten...
+[Chrome On Steroids] Projektdaten aus Modal extrahiert
+[Chrome On Steroids] Modal project data extracted: {hasTitle: true, skillsCount: 8, ...}
+[Chrome On Steroids] Lade Benutzerprofil...
+[Chrome On Steroids] Benutzerprofil geladen: {name: "...", skills: 12, ...}
+[Chrome On Steroids] Initialisiere AI-Service...
+[Chrome On Steroids] Generiere Anschreiben mit AI...
+[Chrome On Steroids] Generating with model: claude-3-haiku-20240307
+[Chrome On Steroids] ✅ Generated successfully with model: claude-3-haiku-20240307
+[Chrome On Steroids] Anschreiben generiert: {length: 1234}
+[Chrome On Steroids] Füge Anschreiben in Textfeld ein...
+[Chrome On Steroids] Inserting cover letter {originalLength: 1234, cleanedLength: 1200}
+[Chrome On Steroids] ✅ Cover letter inserted successfully
+[Chrome On Steroids] ✅ Anschreiben erfolgreich generiert und eingefügt
 ```
 
 ---

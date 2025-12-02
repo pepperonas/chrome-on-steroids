@@ -110,7 +110,7 @@ export class LoggingService {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `applyai-logs-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `chromeonsteroids-logs-${new Date().toISOString().split('T')[0]}.json`;
       
       // Trigger Download
       document.body.appendChild(a);

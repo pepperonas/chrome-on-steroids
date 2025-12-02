@@ -1,7 +1,7 @@
 {
-  "name": "apply-ai",
+  "name": "chrome-on-steroids",
   "version": "1.0.0",
-  "description": "AI-powered application assistant for freelancermap.de",
+  "description": "AI-powered browser automation for freelancermap.de and kleinanzeigen.de",
   "author": "Martin Pfeffer | celox.io",
   "license": "MIT",
   "scripts": {

@@ -1,335 +1,496 @@
-# ApplyAI - AI Bewerbungsassistent
+# Chrome On Steroids 🚀
 
-Chrome Extension für automatische Generierung von Bewerbungsanschreiben auf freelancermap.de
+**AI-powered browser automation for freelancermap.de and kleinanzeigen.de**
 
-## Features
+Supercharge your Chrome browser with intelligent automation powered by ChatGPT and Claude AI.
 
-### 🤖 KI-Integration
-- ✅ Unterstützung für **ChatGPT** (OpenAI) und **Claude** (Anthropic)
-- ✅ Separate API Keys für beide Provider
-- ✅ Automatisches Modell-Fallback bei API-Fehlern
-- ✅ Optimierte Prompts mit Anti-Hallucination-Regeln
+---
 
-### 🎯 Smart Button Placement
-- ✅ **Projektdetailseiten**: Button neben "Text generieren" im Formular
-- ✅ **Projektlisten**: Button neben "Text generieren" im Modal
-- ✅ Automatische Erkennung des Kontexts
-- ✅ Keine React-Konflikte (saubere DOM-Manipulation)
+## 🎯 Features
 
-### 📝 Intelligente Anschreiben-Generierung
-- ✅ Automatisches Skill-Matching zwischen Projekt und Profil
-- ✅ Validierung gegen erfundene Inhalte
-- ✅ Strukturierte Anschreiben (Anrede, Hook, Erfahrung, Mehrwert, CTA, Portfolio, Verabschiedung)
-- ✅ Portfolio-Projekte optional einfügbar
-- ✅ Markdown-Bereinigung und Post-Processing
+### 💼 FreelancerMap Integration
+- **Auto-generate cover letters** for freelance projects
+- **Smart skill matching** between your profile and project requirements
+- **Anti-hallucination AI** - only uses real information from your profile
+- **Portfolio integration** - automatically include your project links
+- **One-click application** - generate and insert directly into the form
 
-### 📊 Logging & Export
-- ✅ Automatisches Logging aller Generierungen
-- ✅ Export/Import von Einstellungen als JSON
-- ✅ Export von Generierungs-Logs
-- ✅ Live-Statistiken (Erfolgsrate, Durchschnittszeit)
+### 🛒 Kleinanzeigen Integration
 
-### 🛠️ Technisch
-- ✅ TypeScript mit SOLID-Prinzipien
-- ✅ Webpack für optimales Bundling
-- ✅ Automatische Versionierung (Patch-Increment)
-- ✅ Chrome Storage API für Settings
-- ✅ Umfassende Fehlerbehandlung
+#### Purchase Inquiries
+- **Automated purchase messages** with price suggestions
+- **Configurable discount** (percentage or fixed amount, default: 15%)
+- **Smart message generation** based on product details
+- **One-click insertion** into contact form
 
-## Installation
+#### Listing Optimization
+- **AI-powered description optimizer** for your own listings
+- **Extracts all form data**: category, attributes, condition, shipping, price type
+- **Seller settings**: name, address, shipping options
+- **Automatic warranty disclaimer** for private sales
+- **"Direct Buy" integration** - mentions secure payment when enabled
+- **Supports both "Offer" and "Wanted" listings**
 
-### Entwicklung
+### 🤖 AI Integration
+- ✅ **ChatGPT** (OpenAI) and **Claude** (Anthropic) support
+- ✅ Separate API keys for both providers
+- ✅ Automatic model fallback on API errors
+- ✅ Optimized prompts with anti-hallucination rules
+- ✅ Smart context-aware generation
 
-1. Repository klonen:
+### 📊 Logging & Analytics
+- ✅ Automatic logging of all generations
+- ✅ Export/Import settings as JSON
+- ✅ Export generation logs
+- ✅ Live statistics (success rate, average time)
+
+### 🛠️ Technical
+- ✅ TypeScript with SOLID principles
+- ✅ Modular architecture (FreelancerMap, Kleinanzeigen, Shared)
+- ✅ Webpack for optimal bundling
+- ✅ Automatic versioning (patch increment)
+- ✅ Chrome Storage API for settings
+- ✅ Comprehensive error handling
+- ✅ MutationObserver for dynamic content
+
+---
+
+## 📦 Installation
+
+### Development
+
+1. **Clone repository:**
 
 ```bash
-git clone https://github.com/pepperonas/apply-ai.git
-cd apply-ai
+git clone https://github.com/pepperonas/chrome-on-steroids.git
+cd chrome-on-steroids
 ```
 
-2. Dependencies installieren:
+2. **Install dependencies:**
 
 ```bash
 npm install
 ```
 
-3. Extension bauen:
+3. **Build extension:**
 
 ```bash
 npm run build
 ```
 
-4. In Chrome laden:
+4. **Load in Chrome:**
 
-   - Öffne `chrome://extensions/`
-   - Aktiviere "Entwicklermodus"
-   - Klicke "Entpackte Erweiterung laden"
-   - Wähle den `dist` Ordner
+   - Open `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked"
+   - Select the `dist` folder
 
-### Produktion
+### Production
 
 ```bash
 npm run build
 ```
 
-Die Extension ist dann im `dist` Ordner bereit für die Distribution.
-
-## Verwendung
-
-### 1. Konfiguration
-
-#### AI-Provider einrichten:
-1. Klicke auf das Extension-Icon in der Chrome-Toolbar
-2. **Wähle den Provider-Tab** (ChatGPT oder Claude)
-3. Gib deinen API Key ein
-4. Klicke auf **"Validieren"** um den Key zu testen
-5. Wähle das gewünschte **Modell** aus der Dropdown-Liste
-6. Klicke auf **"Speichern"**
-
-**Wichtig:** Der **aktive Provider** (oben rechts angezeigt als "Aktiv: ...") wird erst nach dem **Speichern** gewechselt!
-
-#### Profil einrichten:
-1. Fülle dein Profil aus:
-   - **Name** (Pflicht)
-   - **E-Mail** (Pflicht)
-   - **Telefon** (optional)
-   - **Skills** - kommagetrennt (Pflicht)
-     - Beispiel: `Java, Spring Boot, React, TypeScript, MySQL`
-   - **Berufserfahrung** (Pflicht)
-     - Detaillierte Beschreibung deiner Erfahrung
-     - Firmen, Rollen, Technologien, Zeiträume
-   - **Persönliche Intro** (optional)
-     - Individueller Einleitungstext für Bewerbungen
-   - **Portfolio-Projekte** (optional) ⭐ NEU
-     - Format: `- projektname.de - Beschreibung (Technologien)`
-     - Wird vor der Verabschiedung im Anschreiben eingefügt
-     - Beispiel:
-       ```
-       - mxster.de - Music Quiz App (React, TypeScript)
-       - berlinometer.de - Berlin Events Platform
-       - github.com/username/project - Beschreibung
-       ```
-2. Klicke auf **"Speichern"**
-
-#### Provider wechseln:
-1. Klicke auf den **anderen Provider-Tab** (z.B. Claude statt ChatGPT)
-2. Gib den API Key für diesen Provider ein (falls noch nicht vorhanden)
-3. Wähle das gewünschte Modell
-4. **Klicke auf "Speichern"** - erst jetzt wird der Provider aktiviert!
-5. Der Badge oben rechts zeigt nun den neuen Provider an
-
-### 2. Bewerbung generieren
-
-#### Auf Projektdetailseiten (`/projekt/*`)
-1. Navigiere zu einer Projektseite auf freelancermap.de
-2. Scrolle zum Bewerbungsformular (oder klicke "Bewerben")
-3. Der **"ApplyAI"** Button (mit Diamant-Icon 💎) erscheint automatisch neben dem "Text generieren" Button
-4. Klicke auf **"ApplyAI"** um das Anschreiben zu generieren
-5. Das generierte Anschreiben wird automatisch in das Textfeld eingefügt
-
-#### Auf Projektlisten (`/projektboerse.html`)
-1. Klicke auf ein Projekt in der Liste
-2. Klicke auf **"Bewerben"** im Modal-Dialog
-3. Der **"ApplyAI"** Button erscheint neben dem "Text generieren" Button
-4. Klicke auf **"ApplyAI"** um das Anschreiben zu generieren
-5. Das generierte Anschreiben wird automatisch eingefügt
-
-**Hinweis:** Der Button erscheint nur, wenn ein Bewerbungsformular mit Anschreiben-Feld vorhanden ist.
-
-### 3. Einstellungen exportieren/importieren
-
-**Export:**
-1. Öffne die Extension (Klick auf das Icon)
-2. Klicke auf **"Export"** (unten links)
-3. Eine JSON-Datei wird heruntergeladen: `applyai-settings-YYYY-MM-DD.json`
-
-**Import:**
-1. Öffne die Extension
-2. Klicke auf **"Import"** (unten links)
-3. Wähle eine zuvor exportierte JSON-Datei
-4. Bestätige den Import (überschreibt aktuelle Einstellungen!)
-5. Alle Einstellungen werden automatisch geladen
-
-**Was wird exportiert/importiert:**
-- ✅ API Keys (ChatGPT & Claude)
-- ✅ Ausgewählte Modelle
-- ✅ Aktiver Provider
-- ✅ Benutzerprofil (Name, E-Mail, Skills, Erfahrung, Portfolio, etc.)
-
-**Anwendungsfälle:**
-- 💾 Backup deiner Einstellungen
-- 🔄 Synchronisation zwischen mehreren Geräten
-- 👥 Team-Settings teilen (ohne API Keys zu teilen - einfach vorher löschen)
-
-## AI-Provider & Modelle
-
-### ChatGPT (OpenAI)
-- **gpt-4** - Empfohlen für beste Qualität
-- **gpt-4-turbo** - Schneller, kostengünstiger
-- **gpt-3.5-turbo** - Am günstigsten
-
-API Key Format: `sk-proj-...` oder `sk-...`  
-Weitere Infos: https://platform.openai.com/api-keys
-
-### Claude (Anthropic)
-
-#### Funktionierende Modelle (getestet Dezember 2025) ⭐
-- **claude-3-haiku-20240307** - ⭐ Standard, schnell & zuverlässig
-- **claude-3-opus-20240229** - Höchste Qualität (Fallback)
-
-API Key Format: `sk-ant-api03-...` oder `sk-ant-...`  
-API Key erstellen: https://console.anthropic.com/
-
-**Wichtig:** 
-- Die Extension verwendet den `anthropic-dangerous-direct-browser-access` Header für Browser-Anfragen
-- Automatisches Modell-Fallback: Falls ein Modell nicht verfügbar ist, wird automatisch das nächste probiert
-- Bei 404-Fehlern (Modell nicht gefunden) wird automatisch ein alternatives Modell verwendet
-
-## Entwicklung
-
-### Befehle
-
-- `npm run dev` - Entwicklungsmodus mit Watch
-- `npm run build` - Production Build
-- `npm test` - Tests ausführen
-- `npm run test:watch` - Tests im Watch-Modus
-- `npm run test:coverage` - Test Coverage Report
-- `npm run lint` - Code linting
-- `npm run type-check` - TypeScript Type Checking
-- `npm run install-extension` - Extension automatisch in Chrome installieren/updaten
-
-### Projektstruktur
-
-```
-apply-ai/
-├── src/
-│   ├── background/      # Service Worker
-│   ├── content/         # Content Scripts
-│   ├── popup/           # Extension Popup
-│   ├── overlay/         # Overlay UI
-│   ├── models/          # Data Models
-│   ├── services/        # Business Logic
-│   ├── controllers/     # MVC Controllers
-│   └── utils/           # Utilities
-├── tests/               # Test Files
-└── dist/                # Build Output
-```
-
-## API Keys
-
-### ChatGPT
-
-Erstelle einen API Key auf [platform.openai.com](https://platform.openai.com/api-keys)
-
-**Format:** `sk-...` (beginnt mit `sk-`)
-
-### Claude
-
-Erstelle einen API Key auf [console.anthropic.com](https://console.anthropic.com/)
-
-**Format:** `sk-ant-...` oder `sk-ant-api03-...` (beginnt mit `sk-ant-`)
-
-**Wichtig:** 
-- Der API Key muss vollständig kopiert werden (keine Leerzeichen am Anfang/Ende)
-- Die Extension verwendet direkte Browser-Anfragen mit dem `anthropic-dangerous-direct-browser-access` Header
-- Automatisches Modell-Fallback bei 404-Fehlern
-- Falls die Validierung fehlschlägt, prüfe die Browser-Konsole (F12 → Console) für detaillierte Fehlermeldungen
-
-## Troubleshooting
-
-### Claude API Key wird als ungültig erkannt
-
-1. **Prüfe das Format:**
-   - Der Key sollte mit `sk-ant-` oder `sk-ant-api03-` beginnen
-   - Stelle sicher, dass der Key vollständig kopiert wurde (keine Leerzeichen)
-
-2. **Prüfe die Browser-Konsole:**
-   - Öffne die Browser-Konsole (F12 → Console)
-   - Suche nach Fehlermeldungen mit `[ApplyAI]`
-   - Die Fehlermeldungen zeigen das genaue Problem
-
-3. **Häufige Fehler:**
-   - **401 Unauthorized**: API Key ist ungültig oder falsch kopiert
-   - **403 Forbidden**: API Key hat keine Berechtigung für die API
-   - **400 Bad Request**: Request-Format ist falsch (sollte automatisch funktionieren)
-   - **CORS Error**: Wird automatisch über Background Service Worker umgangen
-
-4. **API Key neu generieren:**
-   - Falls der Key nicht funktioniert, generiere einen neuen auf [console.anthropic.com](https://console.anthropic.com/)
-   - Stelle sicher, dass der Key die richtigen Berechtigungen hat
-
-5. **Extension neu laden:**
-   - Gehe zu `chrome://extensions/`
-   - Klicke auf "Aktualisieren" (🔄) bei der ApplyAI Extension
-   - Versuche die Validierung erneut
-
-### Button erscheint nicht
-
-1. **Prüfe die Seite:**
-   - Der Button erscheint nur auf `freelancermap.de/projekt/*` oder in Bewerbungsmodalen
-   - Das Anschreiben-Textfeld muss vorhanden sein
-
-2. **Extension-Kontext ungültig:**
-   - Falls "⚠️ Seite neu laden" angezeigt wird, lade die Seite neu (F5)
-   - Dies passiert, wenn die Extension während der Nutzung aktualisiert wurde
-
-3. **Browser-Konsole prüfen:**
-   - Öffne die Konsole (F12 → Console)
-   - Suche nach `[ApplyAI]` Meldungen
-   - Fehlermeldungen zeigen das Problem
-
-### Portfolio wird nicht eingefügt
-
-1. **Prüfe das Profil:**
-   - Öffne die Extension (Klick auf Icon)
-   - Scrolle zu "Portfolio-Projekte"
-   - Stelle sicher, dass das Feld ausgefüllt ist
-   - Klicke auf "Speichern"
-
-2. **Format prüfen:**
-   - Jedes Projekt in einer neuen Zeile
-   - Format: `- projektname.de - Beschreibung (Technologien)`
-   - Beispiel:
-     ```
-     - mxster.de - Music Quiz App (React, TypeScript)
-     - berlinometer.de - Berlin Events Platform
-     ```
-
-3. **Generierung neu starten:**
-   - Lösche das Textfeld
-   - Klicke erneut auf "ApplyAI"
-   - Portfolio sollte jetzt vor der Verabschiedung erscheinen
-
-### React Error #418 (Minified)
-
-**Problem:** Die Extension versucht, React-DOM zu manipulieren.
-
-**Lösung:** 
-- Dieser Fehler sollte nicht mehr auftreten (ab Version 0.0.48+)
-- Die Extension platziert den Button nur noch neben "Text generieren", nicht mehr als Floating Button
-- Falls der Fehler weiterhin auftritt:
-  1. Extension neu laden (`chrome://extensions/` → 🔄)
-  2. Seite neu laden (F5)
-  3. Browser-Konsole prüfen und Fehler melden
-
-### Extension Context Invalidated
-
-**Problem:** Die Extension wurde während der Nutzung neu geladen.
-
-**Lösung:**
-- Lade die Seite neu (F5)
-- Der Button zeigt "⚠️ Seite neu laden" mit Tooltip
-- Nach dem Neuladen funktioniert alles wieder normal
-
-## Lizenz
-
-MIT License - siehe LICENSE Datei
-
-## Author
-
-© 2025 Martin Pfeffer | [celox.io](https://celox.io)
+The extension is ready in the `dist` folder for distribution.
 
 ---
 
-Entwickelt mit ❤️ in Berlin
+## 🚀 Usage
 
+### 1. Configuration
+
+#### Setup AI Provider:
+1. Click the extension icon in Chrome toolbar
+2. **Select provider tab** (ChatGPT or Claude)
+3. Enter your API key
+4. Click **"Validate"** to test the key
+5. Select desired **model** from dropdown
+6. Click **"Save"**
+
+**Important:** The **active provider** (shown top right as "Active: ...") switches only after **saving**!
+
+#### Setup Profile (for FreelancerMap):
+1. Fill in your profile:
+   - **Name** (required)
+   - **Email** (required)
+   - **Phone** (optional)
+   - **Skills** - comma-separated (required)
+     - Example: `Java, Spring Boot, React, TypeScript, MySQL`
+   - **Work Experience** (required)
+     - Detailed description of your experience
+     - Companies, roles, technologies, time periods
+   - **Custom Intro** (optional)
+     - Personal writing style
+   - **Portfolio Projects** (optional)
+     - Links to your projects
+     - Will be inserted before closing
+
+#### Setup Seller Settings (for Kleinanzeigen):
+1. Fill in seller information:
+   - **Name** (required)
+   - **Street & Number**
+   - **Postal Code** (required)
+   - **City** (required)
+   - **Phone** (optional)
+   - **Shipping Options:**
+     - ☑️ Pickup available
+     - ☑️ Shipping available (with optional cost)
+   - **Warranty Disclaimer** (enabled by default)
+
+#### Setup Kleinanzeigen Purchase Settings:
+1. Configure discount:
+   - **Discount Type:** Percentage (%) or Fixed Amount (€)
+   - **Discount Value:** Default 15%
+   - **Custom Message Template** (optional)
+
+---
+
+### 2. FreelancerMap: Generate Cover Letters
+
+1. **Navigate to freelancermap.de**
+2. **Open a project** (detail page or from list)
+3. **Click "Apply"** to open the application form
+4. **Look for the "💎 Chrome On Steroids" button** next to "Generate Text"
+5. **Click the button** - cover letter will be generated and inserted
+6. **Review and submit** your application
+
+**Features:**
+- ✅ Automatic skill matching
+- ✅ Uses only real information from your profile
+- ✅ Structured format (greeting, hook, experience, value, CTA, portfolio, closing)
+- ✅ Portfolio projects included (if configured)
+- ✅ No hallucinations - validates against your profile
+
+---
+
+### 3. Kleinanzeigen: Purchase Inquiries
+
+1. **Navigate to kleinanzeigen.de**
+2. **Open a product** you want to buy
+3. **Click "Send Message"** to open contact modal
+4. **Look for the "💎 Anfrage generieren" button** next to "Send Message"
+5. **Click the button** - purchase inquiry will be generated with price suggestion
+6. **Review and send** your message
+
+**Example Message:**
+```
+Hallo,
+
+ich interessiere mich für "Vintage Kommode".
+
+Würden Sie 339€ akzeptieren?
+
+Ich könnte das Produkt zeitnah abholen bzw. würde es direkt bezahlen.
+
+Viele Grüße
+```
+
+**Price Calculation:**
+- Product Price: 399€
+- Discount: 15%
+- Suggested Price: 339€ (399 - 15%)
+
+---
+
+### 4. Kleinanzeigen: Optimize Your Listings
+
+1. **Navigate to kleinanzeigen.de**
+2. **Click "Create Listing"**
+3. **Fill in the form:**
+   - Title
+   - Category
+   - Attributes (Type, Condition, etc.)
+   - Price & Price Type
+   - Shipping options
+   - Description (can be brief)
+4. **Look for the "💎 Mit AI optimieren" button** next to "Description"
+5. **Click the button** - AI will optimize your description
+6. **Review the optimized text** and publish
+
+**AI will include:**
+- ✅ All form attributes (type, condition, shipping, etc.)
+- ✅ Professional structure
+- ✅ Seller information (location, shipping options)
+- ✅ Warranty disclaimer (if enabled)
+- ✅ "Direct Buy" mention (if enabled)
+- ✅ Selling tips for better conversion
+
+**Example Optimized Description:**
+```
+Verkaufe hochwertiges Damen-Mountainbike in sehr gutem Zustand.
+Ideal für Touren und Stadtfahrten.
+
+Details:
+• Art: Damen
+• Typ: Mountainbike
+• Zustand: Sehr Gut - kaum Gebrauchsspuren
+• Rahmenhöhe: 48cm
+• 21-Gang Shimano Schaltung
+
+Versand möglich (versichert) oder Abholung in 12345 Berlin.
+
+✓ Sicherer Kauf mit "Direkt kaufen" - ohne Verhandlung zum Festpreis!
+
+Bei Interesse einfach melden!
+
+Da ich privat verkaufe, kann ich leider keine Garantie oder 
+Rücknahme anbieten.
+```
+
+---
+
+## 🔧 Configuration Files
+
+### API Keys
+- Stored securely in Chrome Storage
+- Separate keys for ChatGPT and Claude
+- Never exposed in logs or exports
+
+### User Profile
+- Name, Email, Phone
+- Skills (comma-separated)
+- Work Experience (detailed text)
+- Custom Intro (optional)
+- Portfolio Projects (optional)
+
+### Seller Settings
+- Name, Address (Street, Postal Code, City)
+- Phone (optional)
+- Shipping Options (Pickup, Shipping, Both)
+- Shipping Cost (optional)
+- Warranty Disclaimer (enabled/disabled)
+
+### Kleinanzeigen Settings
+- Discount Type (Percentage or Fixed Amount)
+- Discount Value (default: 15)
+- Custom Message Template (optional)
+
+---
+
+## 📊 Export & Import
+
+### Export Settings
+1. Click extension icon
+2. Scroll to bottom
+3. Click **"Export"** button
+4. Save JSON file
+
+### Import Settings
+1. Click extension icon
+2. Scroll to bottom
+3. Click **"Import"** button
+4. Select JSON file
+
+### Export Logs
+1. Click extension icon
+2. Scroll to "Generation Logs"
+3. Click **"Export Logs"** button
+4. Save JSON file with all generation data
+
+---
+
+## 🏗️ Architecture
+
+```
+chrome-on-steroids/
+├── src/
+│   ├── modules/
+│   │   ├── freelancermap/          # FreelancerMap module
+│   │   │   ├── content-script.ts   # Button injection & handling
+│   │   │   ├── controllers/        # Application logic
+│   │   │   ├── services/           # DOM & data extraction
+│   │   │   └── models/             # Data interfaces
+│   │   ├── kleinanzeigen/          # Kleinanzeigen module
+│   │   │   ├── content-script.ts   # Button injection & handling
+│   │   │   ├── services/           # DOM, message gen, optimizer
+│   │   │   └── models/             # Product & seller interfaces
+│   │   └── shared/                 # Shared code
+│   │       ├── services/           # AI, Storage, Logging
+│   │       ├── models/             # Common interfaces
+│   │       └── utils/              # Logger, Constants
+│   ├── content/
+│   │   └── content-router.ts       # Routes to correct module
+│   ├── background/
+│   │   └── service-worker.ts       # Background tasks
+│   ├── popup/
+│   │   ├── popup.html              # Settings UI
+│   │   ├── popup.ts                # Settings logic
+│   │   └── popup-extended.ts       # Kleinanzeigen settings
+│   └── overlay/
+│       └── overlay.ts              # Loading overlay
+├── dist/                           # Built extension
+├── icons/                          # Extension icons
+├── manifest.json                   # Chrome extension manifest
+├── package.json                    # Node dependencies
+├── webpack.config.js               # Build configuration
+└── tsconfig.json                   # TypeScript configuration
+```
+
+---
+
+## 🧪 Development
+
+### Build Commands
+
+```bash
+# Development build with watch
+npm run dev
+
+# Production build
+npm run build
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+npm run lint:fix
+
+# Testing
+npm run test
+npm run test:watch
+npm run test:coverage
+
+# Clean dist folder
+npm run clean
+```
+
+### Auto-Install Extension
+
+```bash
+npm run install-extension
+```
+
+This will:
+1. Build the extension
+2. Auto-increment version number
+3. Attempt to open Chrome with the extension loaded
+
+---
+
+## 📝 Logging
+
+All generations are automatically logged with:
+- Project/Product details
+- User profile used
+- AI provider & model
+- Full prompt sent to AI
+- Generated text
+- Generation time
+- Success/Error status
+
+**Access logs:**
+1. Click extension icon
+2. Scroll to "Generation Logs"
+3. View statistics
+4. Export logs as JSON
+
+---
+
+## 🔒 Privacy & Security
+
+- ✅ **API keys stored locally** in Chrome Storage (encrypted by Chrome)
+- ✅ **No data sent to external servers** (except AI providers)
+- ✅ **No tracking or analytics**
+- ✅ **All processing happens locally** in your browser
+- ✅ **Open source** - audit the code yourself
+
+---
+
+## 🐛 Troubleshooting
+
+### Button doesn't appear
+- **Refresh the page** (F5)
+- **Check if extension is enabled** (chrome://extensions/)
+- **Check console for errors** (F12)
+- **Try reloading the extension**
+
+### API Key invalid
+- **Check key format:**
+  - ChatGPT: `sk-...` (OpenAI format)
+  - Claude: `sk-ant-...` (Anthropic format)
+- **Verify key is active** in your provider dashboard
+- **Check for extra spaces** when pasting
+
+### Generation fails
+- **Check API key** is valid and has credits
+- **Check internet connection**
+- **Check console logs** (F12) for detailed error
+- **Try different AI model** from dropdown
+
+### Button disappears after form update
+- This is fixed with **MutationObserver** and **interval checks**
+- Button should **auto-recreate** within 2 seconds
+- If not, **refresh the page**
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+---
+
+## 👨‍💻 Author
+
+**Martin Pfeffer** | [celox.io](https://celox.io)
+
+- GitHub: [@pepperonas](https://github.com/pepperonas)
+- LinkedIn: [Martin Pfeffer](https://linkedin.com/in/martin-pfeffer)
+
+---
+
+## 🙏 Acknowledgments
+
+- OpenAI for ChatGPT API
+- Anthropic for Claude API
+- Chrome Extensions API
+- TypeScript & Webpack communities
+
+---
+
+## 📈 Roadmap
+
+- [ ] Support for more job platforms
+- [ ] Support for more marketplace platforms
+- [ ] Custom AI prompt templates
+- [ ] Multi-language support
+- [ ] Browser sync across devices
+- [ ] Advanced analytics dashboard
+
+---
+
+## 💡 Tips & Tricks
+
+### FreelancerMap
+- **Keep your profile updated** for best results
+- **Add portfolio projects** to stand out
+- **Review generated text** before sending
+- **Customize the intro** for your writing style
+
+### Kleinanzeigen Purchase
+- **Adjust discount** based on item condition
+- **Be polite** - AI generates friendly messages
+- **Mention pickup** if you can collect locally
+
+### Kleinanzeigen Listings
+- **Fill all form fields** for best optimization
+- **Add photos** before optimizing description
+- **Enable "Direct Buy"** for faster sales
+- **Use warranty disclaimer** for legal protection
+
+---
+
+**Made with ❤️ and ☕ in Berlin**

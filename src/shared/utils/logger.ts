@@ -2,7 +2,7 @@
  * Logging Utility
  */
 export class Logger {
-  private static readonly PREFIX = '[ApplyAI]';
+  private static readonly PREFIX = '[Chrome On Steroids]';
 
   static info(...args: unknown[]): void {
     console.log(this.PREFIX, ...args);

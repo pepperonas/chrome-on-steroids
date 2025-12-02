@@ -20,7 +20,7 @@ export class OverlayController {
     if (this.overlay) return;
 
     this.overlay = document.createElement('div');
-    this.overlay.id = 'apply-ai-overlay';
+    this.overlay.id = 'chrome-on-steroids-overlay';
     this.overlay.innerHTML = this.getOverlayHTML();
 
     document.body.appendChild(this.overlay);
@@ -35,7 +35,7 @@ export class OverlayController {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
               <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <h3>ApplyAI</h3>
+            <h3>Chrome On Steroids</h3>
           </div>
           <div class="overlay-controls">
             <button class="overlay-btn minimize" title="Minimieren">−</button>

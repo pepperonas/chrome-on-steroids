@@ -55,17 +55,17 @@ class FreelancerMapContentScript {
   private checkAndCreateButtonInModal(): void {
     const textarea = document.getElementById('cover-letter') as HTMLTextAreaElement;
     if (!textarea) {
-      this.removeButton('apply-ai-generate-btn');
+      this.removeButton('chrome-on-steroids-generate-btn');
       return;
     }
 
     const modal = textarea.closest('.modal.search-result-modal');
     if (!modal || !modal.classList.contains('show')) {
-      this.removeButton('apply-ai-generate-btn');
+      this.removeButton('chrome-on-steroids-generate-btn');
       return;
     }
 
-    if (document.getElementById('apply-ai-generate-btn')) {
+    if (document.getElementById('chrome-on-steroids-generate-btn')) {
       return;
     }
 
@@ -88,11 +88,11 @@ class FreelancerMapContentScript {
   private checkAndCreateButtonInForm(): void {
     const textarea = FreelancerMapDOMService.getCoverLetterField();
     if (!textarea) {
-      this.removeButton('apply-ai-generate-btn-form');
+      this.removeButton('chrome-on-steroids-generate-btn-form');
       return;
     }
 
-    if (document.getElementById('apply-ai-generate-btn-form')) {
+    if (document.getElementById('chrome-on-steroids-generate-btn-form')) {
       return;
     }
 
@@ -120,7 +120,7 @@ class FreelancerMapContentScript {
     }
 
     const textGenerateButton = buttonsContainer.querySelector('[data-id="ai-application-button"]') as HTMLElement;
-    const button = this.createButtonElement('apply-ai-generate-btn');
+    const button = this.createButtonElement('chrome-on-steroids-generate-btn');
     
     if (textGenerateButton) {
       textGenerateButton.insertAdjacentElement('afterend', button);
@@ -139,7 +139,7 @@ class FreelancerMapContentScript {
     }
 
     const textGenerateButton = buttonsContainer.querySelector('[data-id="ai-application-button"]') as HTMLElement;
-    const button = this.createButtonElement('apply-ai-generate-btn-form');
+    const button = this.createButtonElement('chrome-on-steroids-generate-btn-form');
     
     if (textGenerateButton) {
       textGenerateButton.insertAdjacentElement('afterend', button);
@@ -157,7 +157,7 @@ class FreelancerMapContentScript {
     button.className = 'fm-btn fm-btn-secondary';
     button.innerHTML = `
       <i class="far fa-gem"></i>
-      <span>ApplyAI</span>
+      <span>Chrome On Steroids</span>
     `;
     button.title = 'Anschreiben mit AI generieren';
 
@@ -228,7 +228,7 @@ class FreelancerMapContentScript {
     const button = document.getElementById(id);
     if (button) {
       button.remove();
-      if (id === 'apply-ai-generate-btn' || id === 'apply-ai-generate-btn-form') {
+      if (id === 'chrome-on-steroids-generate-btn' || id === 'chrome-on-steroids-generate-btn-form') {
         this.generateButton = null;
       }
     }

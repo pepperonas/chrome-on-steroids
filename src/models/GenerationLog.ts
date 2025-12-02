@@ -230,7 +230,7 @@ export class GenerationLogHelper {
    * Holt oder erstellt eine Session-ID
    */
   private static getOrCreateSessionId(): string {
-    const key = 'applyai_session_id';
+    const key = 'chromeonsteroids_session_id';
     let sessionId = sessionStorage.getItem(key);
     
     if (!sessionId) {

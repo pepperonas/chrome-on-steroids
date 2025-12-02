@@ -1,4 +1,4 @@
-#apply-ai-overlay {
+#chrome-on-steroids-overlay {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -25,17 +25,17 @@
   }
 }
 
-#apply-ai-overlay.minimized {
+#chrome-on-steroids-overlay.minimized {
   width: 200px;
   height: 60px;
   overflow: hidden;
 }
 
-#apply-ai-overlay.minimized .overlay-body {
+#chrome-on-steroids-overlay.minimized .overlay-body {
   display: none;
 }
 
-#apply-ai-overlay.maximized {
+#chrome-on-steroids-overlay.maximized {
   width: 600px;
   max-height: 80vh;
 }

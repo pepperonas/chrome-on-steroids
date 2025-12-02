@@ -5,7 +5,7 @@ import { Logger } from '../utils/logger';
 /**
  * Content Script - Läuft auf freelancermap.de
  */
-class ApplyAIAssistant {
+class ChromeOnSteroidsAssistant {
   private generateButton: HTMLElement | null = null;
   private observer: MutationObserver | null = null;
   private isCreatingButton = false; // Verhindert mehrfache Button-Erstellung
@@ -75,7 +75,7 @@ class ApplyAIAssistant {
     }
 
     // Prüfe ob Button bereits existiert
-    if (document.getElementById('apply-ai-generate-btn')) {
+    if (document.getElementById('chrome-on-steroids-generate-btn')) {
       return;
     }
 
@@ -84,7 +84,7 @@ class ApplyAIAssistant {
 
   private checkAndCreateButtonInProjectShow(): void {
     // Prüfe ob Button bereits existiert
-    if (document.getElementById('apply-ai-generate-btn-form')) {
+    if (document.getElementById('chrome-on-steroids-generate-btn-form')) {
       return;
     }
 
@@ -94,7 +94,7 @@ class ApplyAIAssistant {
     }
 
     this.isCreatingButton = true;
-    Logger.info('Erstelle ApplyAI Button auf Projektdetailseite');
+    Logger.info('Erstelle Chrome On Steroids Button auf Projektdetailseite');
     
     try {
       // Erstelle Button im Formular (neben "Text generieren")
@@ -116,19 +116,19 @@ class ApplyAIAssistant {
     }
 
     // Prüfe ob Button bereits existiert
-    if (document.getElementById('apply-ai-generate-btn-form')) {
+    if (document.getElementById('chrome-on-steroids-generate-btn-form')) {
       return;
     }
 
-    // Erstelle ApplyAI Button
+    // Erstelle Chrome On Steroids Button
     const button = document.createElement('button');
-    button.id = 'apply-ai-generate-btn-form';
+    button.id = 'chrome-on-steroids-generate-btn-form';
     button.type = 'button';
     button.className = 'fm-btn fm-btn-secondary';
-    button.setAttribute('data-id', 'apply-ai-button-form');
+    button.setAttribute('data-id', 'chrome-on-steroids-button-form');
     button.innerHTML = `
       <i class="far fa-gem"></i>
-      <span>ApplyAI</span>
+      <span>Chrome On Steroids</span>
     `;
     button.title = 'Anschreiben mit AI generieren';
     
@@ -136,7 +136,7 @@ class ApplyAIAssistant {
       e.preventDefault();
       e.stopPropagation();
       
-      Logger.info('ApplyAI Button im Formular geklickt');
+      Logger.info('Chrome On Steroids Button im Formular geklickt');
       
       // Zeige Loading-State
       const originalHTML = button.innerHTML;
@@ -179,7 +179,7 @@ class ApplyAIAssistant {
 
     // Füge Button nach dem "Text generieren" Button ein
     aiButton.insertAdjacentElement('afterend', button);
-    Logger.info('ApplyAI Button neben "Text generieren" Button platziert');
+    Logger.info('Chrome On Steroids Button neben "Text generieren" Button platziert');
   }
 
 
@@ -197,7 +197,7 @@ class ApplyAIAssistant {
 
     // Erstelle Button
     const button = document.createElement('button');
-    button.id = 'apply-ai-generate-btn';
+    button.id = 'chrome-on-steroids-generate-btn';
     button.type = 'button';
     button.innerHTML = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="margin-right: 6px;">
@@ -246,14 +246,14 @@ class ApplyAIAssistant {
   }
 
   private removeButton(): void {
-    const button = document.getElementById('apply-ai-generate-btn');
+    const button = document.getElementById('chrome-on-steroids-generate-btn');
     if (button) {
       button.remove();
       this.generateButton = null;
     }
     
     // Entferne auch Form Button
-    const formButton = document.getElementById('apply-ai-generate-btn-form');
+    const formButton = document.getElementById('chrome-on-steroids-generate-btn-form');
     if (formButton) {
       formButton.remove();
     }
@@ -322,7 +322,7 @@ class ApplyAIAssistant {
       setTimeout(() => {
         button.innerHTML = `
           <i class="far fa-gem"></i>
-          <span>ApplyAI</span>
+          <span>Chrome On Steroids</span>
         `;
         button.title = 'Anschreiben mit AI generieren';
       }, isContextInvalidated ? 5000 : 3000);
@@ -347,7 +347,7 @@ class ApplyAIAssistant {
       } else {
         // Modal ist geschlossen oder kein Anschreiben-Feld vorhanden
         // Entferne Button nur wenn er im Modal war
-        const existingButton = document.getElementById('apply-ai-generate-btn');
+        const existingButton = document.getElementById('chrome-on-steroids-generate-btn');
         if (existingButton && modal && modal.contains(existingButton)) {
           this.removeButton();
         }
@@ -373,7 +373,7 @@ class ApplyAIAssistant {
 
   private checkAndCreateButtonInModal(textarea: HTMLTextAreaElement): void {
     // Prüfe ob Button bereits existiert
-    if (document.getElementById('apply-ai-generate-btn')) {
+    if (document.getElementById('chrome-on-steroids-generate-btn')) {
       return; // Button existiert bereits, nichts tun
     }
 
@@ -383,7 +383,7 @@ class ApplyAIAssistant {
     }
 
     this.isCreatingButton = true;
-    Logger.info('Erstelle ApplyAI Button im Modal');
+    Logger.info('Erstelle Chrome On Steroids Button im Modal');
     
     try {
       this.createGenerateButtonInModal(textarea);
@@ -413,7 +413,7 @@ class ApplyAIAssistant {
     if (textGenerateButton) {
       // Füge Button direkt nach dem "Text generieren" Button ein
       textGenerateButton.insertAdjacentElement('afterend', button);
-      Logger.info('ApplyAI Button neben "Text generieren" Button platziert');
+      Logger.info('Chrome On Steroids Button neben "Text generieren" Button platziert');
     } else {
       // Fallback: Füge am Anfang der Button-Gruppe ein
       if (titleAndButtons.firstChild) {
@@ -421,7 +421,7 @@ class ApplyAIAssistant {
       } else {
         titleAndButtons.appendChild(button);
       }
-      Logger.info('ApplyAI Button am Anfang der Button-Gruppe platziert (Fallback)');
+      Logger.info('Chrome On Steroids Button am Anfang der Button-Gruppe platziert (Fallback)');
     }
     
     this.generateButton = button;
@@ -429,13 +429,13 @@ class ApplyAIAssistant {
 
   private createButtonElement(): HTMLButtonElement {
     const button = document.createElement('a');
-    button.id = 'apply-ai-generate-btn';
+    button.id = 'chrome-on-steroids-generate-btn';
     button.href = '#';
     button.className = 'fm-btn fm-btn-secondary';
     button.setAttribute('target', '_blank');
     button.innerHTML = `
       <i class="far fa-gem"></i>
-      <span>ApplyAI</span>
+      <span>Chrome On Steroids</span>
     `;
     button.title = 'Anschreiben mit AI generieren';
     
@@ -493,5 +493,5 @@ class ApplyAIAssistant {
 }
 
 // Initialisiere Assistant
-new ApplyAIAssistant();
+new ChromeOnSteroidsAssistant();
 

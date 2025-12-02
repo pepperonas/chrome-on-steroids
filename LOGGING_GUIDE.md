@@ -1,4 +1,4 @@
-# ApplyAI - Logging & Analytics Guide
+# Chrome On Steroids - Logging & Analytics Guide
 
 ## 🎯 Zweck
 
