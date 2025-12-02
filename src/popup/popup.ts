@@ -65,6 +65,7 @@ class PopupController {
         (document.getElementById('user-skills') as HTMLTextAreaElement).value = userProfile.skills?.join(', ') || '';
         (document.getElementById('user-experience') as HTMLTextAreaElement).value = userProfile.experience || '';
         (document.getElementById('user-intro') as HTMLTextAreaElement).value = userProfile.customIntro || '';
+        (document.getElementById('user-portfolio') as HTMLTextAreaElement).value = userProfile.portfolio || '';
       }
     } catch (error) {
       this.showStatus('Fehler beim Laden der Einstellungen', 'error');
@@ -367,7 +368,7 @@ class PopupController {
           .map(s => s.trim())
           .filter(s => s),
         experience,
-        portfolio: '',
+        portfolio: (document.getElementById('user-portfolio') as HTMLTextAreaElement).value.trim(),
         customIntro: (document.getElementById('user-intro') as HTMLTextAreaElement).value
       };
       await StorageService.save(CONSTANTS.STORAGE_KEYS.USER_PROFILE, userProfile);
@@ -401,6 +402,7 @@ class PopupController {
       (document.getElementById('user-skills') as HTMLTextAreaElement).value = '';
       (document.getElementById('user-experience') as HTMLTextAreaElement).value = '';
       (document.getElementById('user-intro') as HTMLTextAreaElement).value = '';
+      (document.getElementById('user-portfolio') as HTMLTextAreaElement).value = '';
 
       this.showStatus('Einstellungen zurückgesetzt', 'success');
     }

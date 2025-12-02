@@ -120,6 +120,15 @@ ${project.remote ? '→ Erwähne Remote-Erfahrung nur wenn sie im Profil steht!'
 → Verfügbarkeit: "Ich bin ab [Datum] verfügbar" oder "Ich kann sofort starten"
 → "Gerne bespreche ich die Details in einem kurzen Call"
 
+${userProfile.portfolio ? `
+**[PORTFOLIO-PROJEKTE]** (2-4 Zeilen, optional)
+→ Erwähne relevante Portfolio-Projekte kurz und prägnant
+→ Format: "Gerne zeige ich Ihnen auch meine Projekte: [Projekt-Links/Namen]"
+→ Portfolio-Projekte aus deinem Profil:
+${userProfile.portfolio.split('\n').map(line => line.trim()).filter(line => line).map(line => `  ${line}`).join('\n')}
+→ NUR erwähnen wenn relevant für das Projekt!
+` : ''}
+
 **[VERABSCHIEDUNG]** (2 Zeilen)
 → "Viele Grüße" oder "Beste Grüße"
 → ${userProfile.name}
