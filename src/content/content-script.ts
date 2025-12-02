@@ -83,9 +83,91 @@ class ApplyAIAssistant {
   }
 
   private checkAndCreateButtonInProjectShow(): void {
-    // Auf Projektdetailseiten: Überwache Modal-Öffnung statt Button direkt einzufügen
-    // React verwaltet diese Buttons, daher fügen wir unseren Button nur im Modal hinzu
-    Logger.info('Projektdetailseite erkannt - warte auf Modal-Öffnung');
+    // Prüfe ob Button bereits existiert
+    if (document.getElementById('apply-ai-floating-btn')) {
+      return;
+    }
+
+    // Verhindere mehrfache gleichzeitige Erstellung
+    if (this.isCreatingButton) {
+      return;
+    }
+
+    this.isCreatingButton = true;
+    Logger.info('Erstelle ApplyAI Floating Button auf Projektdetailseite');
+    
+    try {
+      this.createFloatingButton();
+    } finally {
+      setTimeout(() => {
+        this.isCreatingButton = false;
+      }, 500);
+    }
+  }
+
+  private createFloatingButton(): void {
+    // Versuche zuerst, Button neben "Bewerben" Button zu platzieren
+    const contactButton = document.querySelector('[data-testid="contact-button"]') as HTMLElement;
+    const projectHeaderButtons = document.querySelector('.project-header-buttons') as HTMLElement;
+    
+    // Erstelle Floating Action Button außerhalb des React-Baums
+    const floatingButton = document.createElement('button');
+    floatingButton.id = 'apply-ai-floating-btn';
+    floatingButton.type = 'button';
+    floatingButton.className = 'apply-ai-floating-button';
+    floatingButton.innerHTML = `
+      <i class="far fa-gem"></i>
+      <span>ApplyAI</span>
+    `;
+    floatingButton.title = 'Anschreiben mit AI generieren';
+    
+    floatingButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Klicke auf "Bewerben" Button um Modal zu öffnen
+      if (contactButton) {
+        contactButton.click();
+        
+        // Warte bis Modal geöffnet ist und füge Button hinzu
+        const checkModal = setInterval(() => {
+          const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
+          const coverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
+          
+          if (modal && coverLetterField && modal.contains(coverLetterField)) {
+            clearInterval(checkModal);
+            
+            // Warte kurz bis Modal vollständig geladen ist
+            setTimeout(() => {
+              const modalApplyAIButton = document.getElementById('apply-ai-generate-btn');
+              if (modalApplyAIButton) {
+                // Klicke auf ApplyAI Button im Modal
+                (modalApplyAIButton as HTMLElement).click();
+              }
+            }, 500);
+          }
+        }, 100);
+        
+        // Timeout nach 5 Sekunden
+        setTimeout(() => clearInterval(checkModal), 5000);
+      }
+    });
+
+    // Versuche Button neben "Bewerben" Button zu platzieren
+    if (projectHeaderButtons && contactButton) {
+      try {
+        // Füge Button in den Button-Container ein (nach "Bewerben")
+        contactButton.insertAdjacentElement('afterend', floatingButton);
+        Logger.info('ApplyAI Button neben "Bewerben" Button platziert');
+      } catch (error) {
+        // Fallback: Füge als Floating Button hinzu
+        Logger.warn('Konnte Button nicht neben "Bewerben" platzieren, verwende Floating Button');
+        document.body.appendChild(floatingButton);
+      }
+    } else {
+      // Fallback: Füge als Floating Button hinzu
+      document.body.appendChild(floatingButton);
+    }
   }
 
   private createGenerateButton(): void {
@@ -155,6 +237,12 @@ class ApplyAIAssistant {
     if (button) {
       button.remove();
       this.generateButton = null;
+    }
+    
+    // Entferne auch Floating Button
+    const floatingButton = document.getElementById('apply-ai-floating-btn');
+    if (floatingButton) {
+      floatingButton.remove();
     }
   }
 
