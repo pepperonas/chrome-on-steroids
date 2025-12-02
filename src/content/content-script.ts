@@ -83,74 +83,9 @@ class ApplyAIAssistant {
   }
 
   private checkAndCreateButtonInProjectShow(): void {
-    // Suche nach dem "Bewerben" Button auf der Projektdetailseite
-    const contactButton = document.querySelector('[data-testid="contact-button"]') as HTMLElement;
-    
-    if (!contactButton) {
-      return;
-    }
-
-    // Prüfe ob Button bereits existiert
-    if (document.getElementById('apply-ai-generate-btn-project-show')) {
-      return;
-    }
-
-    // Verhindere mehrfache gleichzeitige Erstellung
-    if (this.isCreatingButton) {
-      return;
-    }
-
-    this.isCreatingButton = true;
-    Logger.info('Erstelle ApplyAI Button auf Projektdetailseite');
-    
-    try {
-      this.createGenerateButtonInProjectShow(contactButton);
-    } finally {
-      setTimeout(() => {
-        this.isCreatingButton = false;
-      }, 500);
-    }
-  }
-
-  private createGenerateButtonInProjectShow(contactButton: HTMLElement): void {
-    const button = document.createElement('button');
-    button.id = 'apply-ai-generate-btn-project-show';
-    button.type = 'button';
-    button.className = 'fm-btn fm-btn-secondary mg-r-action-element-stacked';
-    button.setAttribute('data-id', 'apply-ai-button');
-    button.innerHTML = `
-      <i class="far fa-gem"></i>
-      <span>ApplyAI</span>
-    `;
-    button.title = 'Anschreiben mit AI generieren';
-    
-    button.addEventListener('click', async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Klicke auf "Bewerben" Button um Modal zu öffnen
-      contactButton.click();
-      
-      // Warte bis Modal geöffnet ist und füge Button hinzu
-      setTimeout(() => {
-        const modal = document.querySelector('.modal.search-result-modal.show') as HTMLElement;
-        const coverLetterField = document.getElementById('cover-letter') as HTMLTextAreaElement;
-        
-        if (modal && coverLetterField && modal.contains(coverLetterField)) {
-          // Modal ist jetzt offen, warte kurz und klicke auf ApplyAI Button im Modal
-          setTimeout(() => {
-            const modalApplyAIButton = document.getElementById('apply-ai-generate-btn');
-            if (modalApplyAIButton) {
-              (modalApplyAIButton as HTMLElement).click();
-            }
-          }, 300);
-        }
-      }, 500);
-    });
-
-    // Füge Button nach dem "Bewerben" Button ein
-    contactButton.insertAdjacentElement('afterend', button);
-    this.generateButton = button;
+    // Auf Projektdetailseiten: Überwache Modal-Öffnung statt Button direkt einzufügen
+    // React verwaltet diese Buttons, daher fügen wir unseren Button nur im Modal hinzu
+    Logger.info('Projektdetailseite erkannt - warte auf Modal-Öffnung');
   }
 
   private createGenerateButton(): void {
@@ -371,18 +306,24 @@ class ApplyAIAssistant {
     // Finde den "Text generieren" Button
     const textGenerateButton = titleAndButtons.querySelector('[data-id="ai-application-button"]') as HTMLElement;
     
+    // Erstelle Button-Element
+    const button = this.createButtonElement();
+    
     if (textGenerateButton) {
-      // Füge Button rechts neben dem "Text generieren" Button ein
-      const button = this.createButtonElement();
-      // Füge nach dem Text generieren Button ein
+      // Füge Button direkt nach dem "Text generieren" Button ein
       textGenerateButton.insertAdjacentElement('afterend', button);
-      this.generateButton = button;
+      Logger.info('ApplyAI Button neben "Text generieren" Button platziert');
     } else {
-      // Fallback: Füge am Ende der Button-Gruppe ein
-      const button = this.createButtonElement();
-      titleAndButtons.appendChild(button);
-      this.generateButton = button;
+      // Fallback: Füge am Anfang der Button-Gruppe ein
+      if (titleAndButtons.firstChild) {
+        titleAndButtons.insertBefore(button, titleAndButtons.firstChild);
+      } else {
+        titleAndButtons.appendChild(button);
+      }
+      Logger.info('ApplyAI Button am Anfang der Button-Gruppe platziert (Fallback)');
     }
+    
+    this.generateButton = button;
   }
 
   private createButtonElement(): HTMLButtonElement {
@@ -442,10 +383,6 @@ class ApplyAIAssistant {
   private onUrlChange(): void {
     // Entferne alle Buttons
     this.removeButton();
-    const projectShowButton = document.getElementById('apply-ai-generate-btn-project-show');
-    if (projectShowButton) {
-      projectShowButton.remove();
-    }
     
     // Prüfe neue Seite
     setTimeout(() => {
