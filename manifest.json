@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chrome On Steroids",
-  "version": "0.0.114",
+  "version": "0.0.134",
   "description": "AI-powered browser automation: Auto-generate cover letters for freelancermap.de, optimize product listings for kleinanzeigen.de, and automated purchase inquiries",
   "permissions": [
     "storage",
@@ -12,6 +12,7 @@
     "https://www.freelancermap.de/*",
     "https://www.kleinanzeigen.de/*",
     "https://www.linkedin.com/*",
+    "https://www.instagram.com/*",
     "https://api.openai.com/*",
     "https://api.anthropic.com/*"
   ],
@@ -23,7 +24,8 @@
       "matches": [
         "https://www.freelancermap.de/*",
         "https://www.kleinanzeigen.de/*",
-        "https://www.linkedin.com/*"
+        "https://www.linkedin.com/*",
+        "https://www.instagram.com/*"
       ],
       "js": [
         "content/content-router.js"

@@ -80,17 +80,12 @@ class LinkedInContentScript {
   }
 
   /**
-   * Beobachtet Kommentar-Editoren
+   * Beobachtet Kommentar-Editoren (inkl. Antwort-Editoren)
    */
   private observeCommentEditors(): void {
     // Prüfe initial ob Kommentar-Editor bereits sichtbar ist
     const checkInitial = () => {
-      const isVisible = LinkedInDOMService.isCommentEditorVisible();
-      const hasButton = this.commentOptimizeButton && document.body.contains(this.commentOptimizeButton);
-      
-      Logger.info('[LinkedIn] Checking comment editor:', { isVisible, hasButton });
-      
-      if (isVisible && !hasButton) {
+      if (LinkedInDOMService.isCommentEditorVisible()) {
         Logger.info('[LinkedIn] Comment editor visible, creating button...');
         // Versuche mehrfach mit verschiedenen Delays
         setTimeout(() => this.createCommentOptimizeButton(), 100);
@@ -108,20 +103,18 @@ class LinkedInContentScript {
 
     // Beobachte Änderungen für Kommentar-Editoren
     this.commentObserver = new MutationObserver(() => {
-      const isVisible = LinkedInDOMService.isCommentEditorVisible();
-      const hasButton = this.commentOptimizeButton && document.body.contains(this.commentOptimizeButton);
-      
-      if (isVisible && !hasButton) {
-        Logger.info('[LinkedIn] Comment editor became visible, creating button...');
-        // Versuche mehrfach mit verschiedenen Delays
-        setTimeout(() => this.createCommentOptimizeButton(), 100);
-        setTimeout(() => this.createCommentOptimizeButton(), 500);
-        setTimeout(() => this.createCommentOptimizeButton(), 1000);
-      } else if (!isVisible && this.commentOptimizeButton) {
-        // Prüfe ob Button noch im DOM ist, bevor wir ihn zurücksetzen
-        if (!document.body.contains(this.commentOptimizeButton)) {
-          Logger.info('[LinkedIn] Comment editor closed, resetting button');
-          this.commentOptimizeButton = null;
+      if (LinkedInDOMService.isCommentEditorVisible()) {
+        // Prüfe ob für den aktuellen Editor bereits ein Button existiert
+        const container = LinkedInDOMService.getCommentOptimizeButtonContainer();
+        if (container) {
+          const existingButton = container.querySelector('.cos-comment-optimize-btn');
+          if (!existingButton || !document.body.contains(existingButton)) {
+            Logger.info('[LinkedIn] Comment editor visible without button, creating button...');
+            // Versuche mehrfach mit verschiedenen Delays
+            setTimeout(() => this.createCommentOptimizeButton(), 100);
+            setTimeout(() => this.createCommentOptimizeButton(), 500);
+            setTimeout(() => this.createCommentOptimizeButton(), 1000);
+          }
         }
       }
     });
@@ -171,9 +164,6 @@ class LinkedInContentScript {
     const button = document.createElement('button');
     button.className = 'artdeco-button artdeco-button--secondary artdeco-button--2';
     button.innerHTML = `
-      <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
       <span>💎 Optimieren</span>
     `;
     button.style.display = 'flex';
@@ -220,9 +210,6 @@ class LinkedInContentScript {
     const button = document.createElement('button');
     button.className = 'artdeco-button artdeco-button--secondary artdeco-button--2 cos-post-optimize-btn';
     button.innerHTML = `
-      <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
       <span>💎 Optimieren</span>
     `;
     button.style.display = 'flex';
@@ -245,14 +232,9 @@ class LinkedInContentScript {
   }
 
   /**
-   * Erstellt den Optimierungs-Button für Kommentare
+   * Erstellt den Optimierungs-Button für Kommentare (inkl. Antworten)
    */
   private createCommentOptimizeButton(): void {
-    if (this.commentOptimizeButton && document.body.contains(this.commentOptimizeButton)) {
-      Logger.info('[LinkedIn] Comment optimize button already exists in DOM');
-      return; // Button bereits vorhanden und im DOM
-    }
-
     Logger.info('[LinkedIn] Creating comment optimize button...');
     const container = LinkedInDOMService.getCommentOptimizeButtonContainer();
     if (!container) {
@@ -264,7 +246,7 @@ class LinkedInContentScript {
 
     // Prüfe ob Button bereits im Container existiert
     const existingButton = container.querySelector('.cos-comment-optimize-btn');
-    if (existingButton) {
+    if (existingButton && document.body.contains(existingButton)) {
       Logger.info('[LinkedIn] Comment optimize button already exists in container');
       this.commentOptimizeButton = existingButton as HTMLElement;
       return;
@@ -274,9 +256,6 @@ class LinkedInContentScript {
     const button = document.createElement('button');
     button.className = 'artdeco-button artdeco-button--secondary artdeco-button--2 cos-comment-optimize-btn';
     button.innerHTML = `
-      <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
       <span>💎 Optimieren</span>
     `;
     button.style.display = 'inline-flex';
@@ -295,12 +274,48 @@ class LinkedInContentScript {
       this.handleCommentOptimizeClick();
     });
 
-    // Füge den Button direkt VOR dem Submit-Button ein (falls vorhanden)
-    const submitButton = container.querySelector('.comments-comment-box__submit-button--cr, .comments-comment-box__submit-button, button[class*="primary"]');
-    if (submitButton && submitButton.parentElement === container) {
-      container.insertBefore(button, submitButton);
+    // Finde den "Posten"-Button im Container (neue LinkedIn-Struktur)
+    let postenButton: HTMLElement | null = null;
+    const allElements = container.querySelectorAll('div[role="button"], button');
+    for (const el of Array.from(allElements)) {
+      const element = el as HTMLElement;
+      const text = element.textContent?.trim() || element.innerText?.trim() || '';
+      const ariaLabel = element.getAttribute('aria-label') || '';
+      
+      if ((text === 'Posten' || text === 'posten' || text === 'Post' || text === 'post' ||
+           ariaLabel.includes('Posten') || ariaLabel.includes('posten')) &&
+          element.offsetParent !== null) {
+        postenButton = element;
+        Logger.info('[LinkedIn] Posten button found in container, text:', text);
+        break;
+      }
+    }
+    
+    // Fallback: Suche nach "Kommentieren" oder "Antworten" Button
+    if (!postenButton) {
+      const submitButtons = container.querySelectorAll('button');
+      for (const btn of Array.from(submitButtons)) {
+        const text = btn.textContent?.trim() || btn.innerText?.trim() || '';
+        if (text.includes('Kommentieren') || 
+            text.includes('Antworten') || 
+            text.includes('kommentieren') ||
+            text.includes('antworten') ||
+            btn.classList.contains('comments-comment-box__submit-button--cr')) {
+          postenButton = btn as HTMLElement;
+          Logger.info('[LinkedIn] Submit button found (Kommentieren/Antworten), text:', text);
+          break;
+        }
+      }
+    }
+
+    // Platziere den Button vor "Posten" wenn gefunden
+    if (postenButton && postenButton.parentElement === container) {
+      container.insertBefore(button, postenButton);
+      Logger.info('[LinkedIn] Optimize button inserted before Posten/Submit button');
     } else {
+      // Fallback: Am Ende des Containers einfügen
       container.appendChild(button);
+      Logger.info('[LinkedIn] Posten/Submit button not found, appended to container');
     }
     this.commentOptimizeButton = button;
 
@@ -441,16 +456,28 @@ class LinkedInContentScript {
       `;
       this.commentOptimizeButton.style.pointerEvents = 'none';
 
-      // Extrahiere Kommentar-Daten
-      const comment = LinkedInDOMService.extractCommentData();
-      if (!comment) {
-        throw new Error('Kommentar-Daten konnten nicht extrahiert werden');
-      }
-      if (!comment.content) {
-        throw new Error('Bitte fülle zuerst den Kommentar aus');
+      // Extrahiere Original-Post-Kontext (falls vorhanden)
+      const originalPostContext = LinkedInDOMService.extractOriginalPostForComment();
+      
+      if (!originalPostContext) {
+        throw new Error('Post-Kontext konnte nicht gefunden werden. Bitte öffne einen Post, um zu kommentieren.');
       }
 
-      Logger.info('[LinkedIn] Comment data extracted:', comment);
+      // Extrahiere Kommentar-Daten (kann leer sein, dann wird aus dem Kontext geantwortet)
+      const comment = LinkedInDOMService.extractCommentData();
+      
+      // Wenn kein Kommentar eingegeben wurde, erstelle ein leeres Kommentar-Objekt
+      // Die KI wird dann aus dem Post-Kontext heraus eine Antwort generieren
+      const commentData: LinkedInArticle = {
+        title: '',
+        content: comment?.content || '' // Leer, wenn kein Kommentar vorhanden
+      };
+
+      Logger.info('[LinkedIn] Comment data extracted:', {
+        commentLength: commentData.content.length,
+        hasPostContext: !!originalPostContext,
+        isEmpty: !commentData.content
+      });
 
       // Optimiere Kommentar
       this.commentOptimizeButton.innerHTML = `
@@ -460,11 +487,12 @@ class LinkedInContentScript {
         <span>KI arbeitet...</span>
       `;
 
-      const optimizedContent = await ArticleOptimizer.optimizeArticle(comment, 'comment');
+      const optimizedContent = await ArticleOptimizer.optimizeArticle(commentData, 'comment', originalPostContext);
 
       Logger.info('[LinkedIn] Comment optimized:', {
-        originalLength: comment.content.length,
-        optimizedLength: optimizedContent.length
+        originalLength: commentData.content.length,
+        optimizedLength: optimizedContent.length,
+        wasGeneratedFromContext: !commentData.content
       });
 
       // Füge optimierten Content ein (type = 'comment', ohne Formatierung)

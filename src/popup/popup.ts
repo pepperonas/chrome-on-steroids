@@ -8,6 +8,7 @@ import { CONSTANTS } from '../shared/utils/constants';
 import { Logger } from '../shared/utils/logger';
 import { KleinanzeigenPopupExtension } from './popup-extended';
 import { LinkedInPopupExtension } from './popup-linkedin';
+import { InstagramPopupExtension } from './popup-instagram';
 
 /**
  * Popup Controller für Einstellungen
@@ -25,8 +26,10 @@ class PopupController {
     await KleinanzeigenPopupExtension.loadKleinanzeigenSettings();
     await KleinanzeigenPopupExtension.loadSellerSettings();
     await LinkedInPopupExtension.loadLinkedInSettings();
+    await InstagramPopupExtension.loadInstagramSettings();
     this.attachEventListeners();
     KleinanzeigenPopupExtension.attachEventListeners();
+    InstagramPopupExtension.attachEventListeners();
   }
 
   private async loadSettings(): Promise<void> {
@@ -260,9 +263,12 @@ class PopupController {
     const models = provider === AIProvider.CHATGPT
       ? ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo']
       : [
-          // Funktionierende Claude Modelle (getestet Dezember 2025)
-          'claude-3-haiku-20240307',    // ⭐ Empfohlen - schnell & zuverlässig
-          'claude-3-opus-20240229'      // Opus - höchste Qualität
+          // Funktionierende Claude Modelle (getestet Januar 2025)
+          'claude-3-5-sonnet-20241022',    // ⭐ Neuestes - beste Qualität
+          'claude-3-5-haiku-20241022',    // ⭐ Neuestes Haiku - schnell & günstig
+          'claude-3-sonnet-20240229',     // Fallback: Sonnet
+          'claude-3-haiku-20240307',      // Fallback: Haiku
+          'claude-3-opus-20240229'        // Fallback: Opus
         ];
 
     models.forEach(model => {
@@ -416,6 +422,9 @@ class PopupController {
       // Speichere LinkedIn-Einstellungen
       await LinkedInPopupExtension.saveLinkedInSettings();
 
+      // Speichere Instagram-Einstellungen
+      await InstagramPopupExtension.saveInstagramSettings();
+
       // Aktualisiere den Active-Badge
       this.updateActiveBadge(this.currentProvider);
 
@@ -454,7 +463,10 @@ class PopupController {
       await KleinanzeigenPopupExtension.resetSellerSettings();
 
       // Reset LinkedIn-Einstellungen
-      await StorageService.remove('linkedin_settings');
+      await LinkedInPopupExtension.resetLinkedInSettings();
+
+      // Reset Instagram-Einstellungen
+      await InstagramPopupExtension.resetInstagramSettings();
 
       this.showStatus('Einstellungen zurückgesetzt', 'success');
     }
@@ -602,7 +614,7 @@ class PopupController {
       await KleinanzeigenPopupExtension.loadKleinanzeigenSettings();
       await KleinanzeigenPopupExtension.loadSellerSettings();
       await LinkedInPopupExtension.loadLinkedInSettings();
-      await LinkedInPopupExtension.loadLinkedInSettings();
+      await InstagramPopupExtension.loadInstagramSettings();
 
       this.showStatus(`${importedCount} Einstellungen importiert ✓`, 'success');
       Logger.info('Settings imported successfully', {

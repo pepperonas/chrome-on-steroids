@@ -69,5 +69,15 @@ export class LinkedInPopupExtension {
       Logger.error('[LinkedIn] Error saving settings:', error);
     }
   }
+
+  static async resetLinkedInSettings(): Promise<void> {
+    try {
+      await StorageService.remove('linkedin_settings');
+      await this.loadLinkedInSettings(); // Load defaults
+      Logger.info('[LinkedIn] Settings reset to defaults');
+    } catch (error) {
+      Logger.error('[LinkedIn] Error resetting settings:', error);
+    }
+  }
 }
 

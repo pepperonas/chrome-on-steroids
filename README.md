@@ -1,6 +1,6 @@
 # Chrome On Steroids 🚀
 
-**AI-powered browser automation for freelancermap.de, kleinanzeigen.de, and LinkedIn**
+**AI-powered browser automation for freelancermap.de, kleinanzeigen.de, LinkedIn, and Instagram**
 
 Supercharge your Chrome browser with intelligent automation powered by ChatGPT and Claude AI.
 
@@ -36,11 +36,18 @@ Supercharge your Chrome browser with intelligent automation powered by ChatGPT a
 - **Article optimization** - optimize title and content with professional formatting
 - **Post optimization** - enhance your LinkedIn posts for better engagement
 - **Comment optimization** - craft concise, valuable comments
+- **Context-aware responses** - generate comments from post context (even without input)
 - **Configurable styling** - bold, italic, code blocks, quotes
 - **Highlighting intensity** - control formatting density (low, medium, high)
 - **Title optimization** - optional separate title/headline optimization for articles
 - **Markdown to HTML conversion** - automatic formatting for LinkedIn's rich text editor
 - **Smart language preservation** - maintains original language (no translation)
+
+### 📸 Instagram Integration
+- **Comment optimization** - optimize your Instagram comments with AI
+- **Context-aware responses** - uses original post content for relevant comments
+- **Mood selection** - choose tone (neutral, friendly, professional, casual, enthusiastic, supportive)
+- **Smart generation** - can create comments even without user input
 
 ### 🤖 AI Integration
 - ✅ **ChatGPT** (OpenAI) and **Claude** (Anthropic) support
@@ -167,6 +174,14 @@ The popup uses an **accordion UI** to organize settings by platform:
    - **Warranty Disclaimer** (enabled by default)
 
 #### 💼 LinkedIn Einstellungen (Accordion)
+
+1. Expand **"LinkedIn Einstellungen"** accordion
+2. Configure:
+   - **Titel optimieren** - Enable/disable title optimization for articles
+   - **Styling verwenden** - Enable/disable Markdown formatting (bold, italic, code, quotes)
+   - **Highlighting-Intensität** - Choose formatting density (low, medium, high)
+
+#### 📸 Instagram Einstellungen (Accordion)
 
 **Article Optimization:**
 1. Expand **"LinkedIn Einstellungen"** accordion
@@ -314,19 +329,23 @@ Rücknahme anbieten.
 - ✅ **Hashtag integration** - Automatically adds relevant hashtags
 - ✅ **Call-to-action** - Encourages comments and engagement
 
-#### Comments
+#### Comments & Replies
 1. **Navigate to any LinkedIn post**
-2. **Click "Comment"** to open comment editor
-3. **Type your comment** (can be brief)
-4. **Look for the "💎 Optimieren" button** next to "Kommentieren" button
-5. **Click the button** - AI will optimize your comment
-6. **Review and post** your comment
+2. **Click "Comment"** or "Reply" to open comment editor
+3. **Option A: Type your comment** (can be brief) - AI will optimize it
+4. **Option B: Leave empty** - AI will generate a relevant response from the post context
+5. **Look for the "💎 Optimieren" button** next to "Kommentieren"/"Posten" button
+6. **Click the button** - AI will optimize or generate your comment
+7. **Review and post** your comment
 
 **Features:**
-- ✅ **Concise optimization** - Short, valuable comments (2-3 sentences)
+- ✅ **Context-aware** - Uses original post content to generate relevant responses
+- ✅ **Smart generation** - Can create comments even without user input
+- ✅ **Concise optimization** - Short, valuable comments (2-3 sentences, 100-300 chars)
 - ✅ **Professional tone** - Respectful and constructive
-- ✅ **Value-focused** - Adds real insights, not fluff
+- ✅ **Value-focused** - Adds real insights, not generic fluff
 - ✅ **No hashtags** - Comments don't include hashtags
+- ✅ **No marketing-speak** - Authentic, human-like responses
 
 **Example Optimized Article:**
 ```
@@ -391,6 +410,9 @@ Was sind eure Erfahrungen mit Code-Reviews? Lasst uns in den Kommentaren diskuti
 - Optimize Title (default: enabled) - Optimize article title separately
 - Use Styling (default: enabled) - Enable Markdown formatting
 - Highlighting Intensity (low, medium, high) - Control formatting density
+
+### Instagram Settings
+- Mood (default: neutral) - Comment tone selection (neutral, friendly, professional, casual, enthusiastic, supportive)
 
 ---
 
@@ -626,6 +648,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 ## 📈 Roadmap
 
 - [x] **LinkedIn** - Artikel, Posts, Kommentare optimieren ✅
+- [x] **Instagram** - Kommentare optimieren ✅
 - [ ] **Google Forms** - universell einsetzbar
 - [ ] Support for more job platforms
 - [ ] Support for more marketplace platforms

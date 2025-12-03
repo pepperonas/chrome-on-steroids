@@ -42,28 +42,39 @@ export class LinkedInDOMService {
   }
 
   /**
-   * Prüft ob ein Kommentar-Editor sichtbar ist
+   * Prüft ob ein Kommentar-Editor sichtbar ist (inkl. Antwort-Editoren)
    */
   static isCommentEditorVisible(): boolean {
-    // Verschiedene Selektoren für Kommentar-Editoren
+    // Verschiedene Selektoren für Kommentar-Editoren (inkl. Antwort-Editoren)
     const selectors = [
       '.comments-comment-box [data-test-ql-editor-contenteditable="true"]',
+      '.comments-comment-box__form [data-test-ql-editor-contenteditable="true"]',
+      '.comments-comment-box .ql-editor[contenteditable="true"]',
+      '.comments-comment-box__form .ql-editor[contenteditable="true"]',
+      '.comments-comment-box [contenteditable="true"].ql-editor',
+      '.comments-comment-box__form [contenteditable="true"].ql-editor',
       '.comments-comment-box .ql-editor',
+      '.comments-comment-box__form .ql-editor',
+      '.comments-comment-box [contenteditable="true"]',
+      '.comments-comment-box__form [contenteditable="true"]',
       '.comments-comment-box__editor [contenteditable="true"]',
       '.comments-comment-box__editor .ql-editor',
-      '.comments-comment-box__form [contenteditable="true"]',
-      '.comments-comment-box__form .ql-editor',
       '.comment-box [contenteditable="true"]',
-      '.comment-box .ql-editor'
+      '.comment-box .ql-editor',
+      '.editor-content .ql-editor[contenteditable="true"]',
+      '.comments-comment-texteditor .ql-editor[contenteditable="true"]'
     ];
 
     for (const selector of selectors) {
-      const commentEditor = document.querySelector(selector) as HTMLElement;
-      if (commentEditor && 
-          commentEditor.getAttribute('aria-hidden') !== 'true' &&
-          commentEditor.offsetParent !== null) {
-        Logger.info('[LinkedIn] Comment editor found with selector:', selector);
-        return true;
+      const elements = document.querySelectorAll(selector);
+      for (const element of Array.from(elements)) {
+        const commentEditor = element as HTMLElement;
+        if (commentEditor && 
+            commentEditor.getAttribute('aria-hidden') !== 'true' &&
+            commentEditor.offsetParent !== null) {
+          Logger.info('[LinkedIn] Comment editor found with selector:', selector);
+          return true;
+        }
       }
     }
 
@@ -128,6 +139,45 @@ export class LinkedInDOMService {
       };
     } catch (error) {
       Logger.error('[LinkedIn] Error extracting post data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Extrahiert den Original-Post, auf den geantwortet wird
+   */
+  static extractOriginalPostForComment(): string | null {
+    try {
+      // Suche nach dem Post-Content in der Nähe des Kommentar-Editors
+      const postContentSelectors = [
+        '.attributed-text-segment-list__content',
+        '[data-test-id="main-feed-activity-card__commentary"]',
+        '.feed-shared-update-v2__commentary',
+        '.feed-shared-text-view__text-view',
+        '.feed-shared-text-view__text',
+        '.main-feed-activity-card__commentary',
+        'p[data-test-id="main-feed-activity-card__commentary"]'
+      ];
+
+      for (const selector of postContentSelectors) {
+        const elements = document.querySelectorAll(selector);
+        for (const element of Array.from(elements)) {
+          const el = element as HTMLElement;
+          // Prüfe ob Element sichtbar ist und Text enthält
+          if (el.offsetParent !== null) {
+            const text = el.innerText?.trim() || el.textContent?.trim() || '';
+            if (text && text.length > 20) { // Mindestens 20 Zeichen, um relevante Posts zu finden
+              Logger.info('[LinkedIn] Original post found with selector:', selector, 'length:', text.length);
+              return text.substring(0, 1000); // Maximal 1000 Zeichen für den Kontext
+            }
+          }
+        }
+      }
+
+      Logger.debug('[LinkedIn] No original post found for comment context');
+      return null;
+    } catch (error) {
+      Logger.error('[LinkedIn] Error extracting original post:', error);
       return null;
     }
   }
@@ -251,8 +301,10 @@ export class LinkedInDOMService {
       let contentEditor: HTMLElement | null = null;
 
       if (type === 'comment') {
-        // Quill-Editor für Kommentare - verwende die gleichen Selektoren wie in extractCommentData
+        // Quill-Editor für Kommentare - erweiterte Selektoren für neue LinkedIn-Struktur
         const editorSelectors = [
+          '.comment-box [contenteditable="true"]',  // Neue Struktur
+          '.comment-box .ql-editor[contenteditable="true"]',
           '.comments-comment-box [data-test-ql-editor-contenteditable="true"]',
           '.comments-comment-box__form [data-test-ql-editor-contenteditable="true"]',
           '.comments-comment-box .ql-editor[contenteditable="true"]',
@@ -264,7 +316,11 @@ export class LinkedInDOMService {
           '.comments-comment-box [contenteditable="true"]',
           '.comments-comment-box__form [contenteditable="true"]',
           '.editor-content .ql-editor[contenteditable="true"]',
-          '.comments-comment-texteditor .ql-editor[contenteditable="true"]'
+          '.comments-comment-texteditor .ql-editor[contenteditable="true"]',
+          // Generische Selektoren als letzter Fallback
+          'div[contenteditable="true"][aria-label*="Kommentieren"]',
+          'div[contenteditable="true"][aria-label*="kommentieren"]',
+          'div[role="textbox"][aria-multiline="true"]'
         ];
 
         for (const selector of editorSelectors) {
@@ -514,112 +570,119 @@ export class LinkedInDOMService {
   static getCommentOptimizeButtonContainer(): HTMLElement | null {
     Logger.info('[LinkedIn] Searching for comment button container...');
     
-    // Suche nach dem "Kommentieren"-Button (verschiedene Selektoren)
-    const submitButtonSelectors = [
-      '.comments-comment-box__submit-button--cr',
-      '.comments-comment-box__submit-button',
-      'button[id*="ember"][class*="submit-button"]',
-      '.comments-comment-box__form button[class*="primary"]',
-      'button:has(span:contains("Kommentieren"))'
-    ];
-
-    let submitButton: HTMLElement | null = null;
-    for (const selector of submitButtonSelectors) {
-      const buttons = document.querySelectorAll(selector);
-      for (const btn of Array.from(buttons)) {
-        const button = btn as HTMLElement;
-        const text = button.textContent?.trim() || button.innerText?.trim() || '';
-        if (text.includes('Kommentieren') || button.getAttribute('aria-label')?.includes('Kommentieren')) {
-          submitButton = button;
-          Logger.info('[LinkedIn] Comment submit button found with selector:', selector);
-          break;
-        }
-      }
-      if (submitButton) break;
-    }
+    // Suche zuerst nach "Posten"-Button (neue LinkedIn-Struktur für Kommentar-Editor)
+    let postenButton: HTMLElement | null = null;
     
-    if (submitButton) {
-      // Finde den Parent-Container, der den Submit-Button enthält
-      let buttonContainer = submitButton.parentElement;
+    // Suche nach "Posten"-Button anhand des Textes
+    Logger.info('[LinkedIn] Searching for "Posten" button...');
+    const allElements = document.querySelectorAll('div[role="button"], button');
+    for (const el of Array.from(allElements)) {
+      const element = el as HTMLElement;
+      const text = element.textContent?.trim() || element.innerText?.trim() || '';
+      const ariaLabel = element.getAttribute('aria-label') || '';
       
-      // Gehe weiter nach oben, bis wir einen Container mit display-flex und align-items-center finden
-      while (buttonContainer) {
-        const classes = buttonContainer.className || '';
-        if (classes.includes('display-flex') && classes.includes('align-items-center')) {
-          Logger.info('[LinkedIn] Comment button container found (display-flex align-items-center parent)');
-          
-          // Prüfe ob bereits ein Optimieren-Button existiert
-          const existingBtn = buttonContainer.querySelector('.cos-comment-optimize-btn');
-          if (existingBtn) {
-            Logger.info('[LinkedIn] Optimize button already exists, returning existing container');
-            return buttonContainer; // Gib den Container zurück, nicht den Button-Parent
-          }
-        
-          // Gib den Container direkt zurück - der Button wird direkt eingefügt
-          Logger.info('[LinkedIn] Comment button container found, returning container for direct button insertion', {
-            containerClasses: buttonContainer.className,
-            submitButtonId: submitButton.id
-          });
-          return buttonContainer;
-        }
-        buttonContainer = buttonContainer.parentElement;
-      }
-      
-      // Fallback: Wenn kein display-flex align-items-center Container gefunden wurde,
-      // versuche es mit dem direkten Parent
-      if (submitButton.parentElement) {
-        Logger.info('[LinkedIn] Using direct parent as container');
-        const parent = submitButton.parentElement;
-        
-        // Prüfe ob bereits ein Optimieren-Button existiert
-        const existingBtn2 = parent.querySelector('.cos-comment-optimize-btn');
-        if (existingBtn2) {
-          Logger.info('[LinkedIn] Optimize button already exists in parent');
-          return parent; // Gib den Parent-Container zurück
-        }
-        
-        // Gib den Parent-Container direkt zurück - der Button wird direkt eingefügt
-        Logger.info('[LinkedIn] Using direct parent as container for button insertion');
-        return parent;
-      }
-    }
-
-    // Fallback: Suche nach der Toolbar mit justify-space-between
-    Logger.info('[LinkedIn] Trying fallback selectors for comment toolbar...');
-    const commentForm = document.querySelector('.comments-comment-box__form');
-    if (!commentForm) {
-      Logger.warn('[LinkedIn] Comment form not found');
-      return null;
-    }
-
-    const toolbarSelectors = [
-      '.comments-comment-box__form .display-flex.justify-space-between > .display-flex.align-items-center',
-      '.comments-comment-box__form .display-flex.justify-space-between > .display-flex:last-child',
-      '.comments-comment-box__form .display-flex.justify-space-between',
-      '.comments-comment-box__form .display-flex.align-items-center:last-child',
-      '.comments-comment-box__form .display-flex:last-child'
-    ];
-
-    let toolbar: HTMLElement | null = null;
-    for (const selector of toolbarSelectors) {
-      toolbar = commentForm.querySelector(selector) as HTMLElement;
-      if (toolbar) {
-        Logger.info('[LinkedIn] Comment toolbar found with selector:', selector);
+      if ((text === 'Posten' || text === 'posten' || text === 'Post' || text === 'post' ||
+           ariaLabel.includes('Posten') || ariaLabel.includes('posten')) &&
+          element.offsetParent !== null) {
+        postenButton = element;
+        Logger.info('[LinkedIn] Posten button found, text:', text);
         break;
       }
     }
+    
+    // Wenn "Posten"-Button gefunden, finde den Container daneben
+    if (postenButton) {
+      // Suche nach dem Form-Container oder dem Parent-Container
+      let container = postenButton.closest('form') as HTMLElement | null;
+      
+      if (!container) {
+        // Suche nach einem Container mit flex/display-flex, der den Posten-Button enthält
+        container = postenButton.parentElement;
+        while (container) {
+          const classes = container.className || '';
+          const style = window.getComputedStyle(container);
+          if (classes.includes('flex') || 
+              classes.includes('display-flex') ||
+              style.display === 'flex' ||
+              container.tagName.toLowerCase() === 'form') {
+            Logger.info('[LinkedIn] Posten button container found');
+            
+            const existingBtn = container.querySelector('.cos-comment-optimize-btn');
+            if (existingBtn) {
+              Logger.info('[LinkedIn] Optimize button already exists');
+              return container;
+            }
+            
+            return container;
+          }
+          container = container.parentElement;
+        }
+      } else {
+        Logger.info('[LinkedIn] Form container found for Posten button');
+        const existingBtn = container.querySelector('.cos-comment-optimize-btn');
+        if (existingBtn) {
+          Logger.info('[LinkedIn] Optimize button already exists');
+          return container;
+        }
+        return container;
+      }
+      
+      // Fallback: Direkter Parent
+      if (postenButton.parentElement) {
+        Logger.info('[LinkedIn] Using direct parent of Posten button as container');
+        return postenButton.parentElement;
+      }
+    }
+    
+    // Fallback: Suche nach "Antworten"-Button (für Antworten auf Kommentare)
+    Logger.info('[LinkedIn] Trying fallback: searching for "Antworten" button...');
+    const replyButtonSelectors = [
+      'button[data-feed-action="replyToComment"]',
+      'button.comment__action[data-feed-action="replyToComment"]',
+      'button.comment__reply',
+      '.comment__actions button[data-feed-action="replyToComment"]'
+    ];
 
-    if (!toolbar) {
-      Logger.warn('[LinkedIn] Comment editor toolbar not found with any selector');
-      return null;
+    let replyButton: HTMLElement | null = null;
+    
+    for (const selector of replyButtonSelectors) {
+      try {
+        const buttons = document.querySelectorAll(selector);
+        for (const btn of Array.from(buttons)) {
+          const button = btn as HTMLElement;
+          if (button.offsetParent !== null) {
+            replyButton = button;
+            Logger.info('[LinkedIn] Reply button found with selector:', selector);
+            break;
+          }
+        }
+        if (replyButton) break;
+      } catch (error) {
+        Logger.debug('[LinkedIn] Invalid selector:', selector);
+      }
+    }
+    
+    if (replyButton) {
+      let buttonContainer = replyButton.closest('.comment__actions') as HTMLElement | null;
+      
+      if (buttonContainer) {
+        Logger.info('[LinkedIn] Comment actions container found');
+        const existingBtn = buttonContainer.querySelector('.cos-comment-optimize-btn');
+        if (existingBtn) {
+          Logger.info('[LinkedIn] Optimize button already exists');
+          return buttonContainer;
+        }
+        return buttonContainer;
+      }
+      
+      if (replyButton.parentElement) {
+        Logger.info('[LinkedIn] Using direct parent as container');
+        return replyButton.parentElement;
+      }
     }
 
-    const buttonGroup = document.createElement('div');
-    buttonGroup.className = 'cos-comment-button-container';
-    buttonGroup.style.display = 'flex';
-    buttonGroup.style.alignItems = 'center';
-    buttonGroup.style.marginRight = '8px';
-    return buttonGroup;
+    Logger.warn('[LinkedIn] Could not find comment button container');
+    return null;
   }
 }
 

@@ -4,6 +4,7 @@ import { Logger } from '../shared/utils/logger';
 import '../modules/freelancermap/content-script';
 import '../modules/kleinanzeigen/content-script';
 import '../modules/linkedin/content-script';
+import '../modules/instagram/content-script';
 
 /**
  * Content Script Router

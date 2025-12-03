@@ -10,13 +10,19 @@ import { CONSTANTS } from '../utils/constants';
 export class ClaudeProvider extends AIService {
   private readonly baseUrl = CONSTANTS.API_ENDPOINTS.CLAUDE;
 
-  // Funktionierende Modelle (getestet Dezember 2025)
+  // Funktionierende Modelle (getestet Januar 2025)
   private readonly modelsToTry = [
-    'claude-3-haiku-20240307',        // ✅ Funktioniert! Schnell & günstig
-    'claude-3-opus-20240229'          // Opus (falls Haiku nicht verfügbar)
+    'claude-3-5-sonnet-20241022',     // ✅ Neuestes Modell - beste Qualität
+    'claude-3-5-haiku-20241022',      // ✅ Neuestes Haiku - schnell & günstig
+    'claude-3-sonnet-20240229',       // Fallback: Sonnet
+    'claude-3-haiku-20240307',        // Fallback: Haiku
+    'claude-3-opus-20240229'          // Fallback: Opus
   ];
 
   private readonly FALLBACK_MODELS = [
+    'claude-3-5-sonnet-20241022',
+    'claude-3-5-haiku-20241022',
+    'claude-3-sonnet-20240229',
     'claude-3-haiku-20240307',
     'claude-3-opus-20240229'
   ];
@@ -116,6 +122,10 @@ export class ClaudeProvider extends AIService {
       try {
         Logger.info(`Trying Claude model: ${model}`);
 
+        // max_tokens ist Pflichtfeld für Claude API - verwende Standardwert falls nicht gesetzt
+        const maxTokens = this.maxTokens || 4096;
+        const temperature = this.temperature || 0.7;
+
         const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -126,8 +136,8 @@ export class ClaudeProvider extends AIService {
           },
           body: JSON.stringify({
             model: model,
-            max_tokens: this.maxTokens,
-            temperature: this.temperature,
+            max_tokens: maxTokens,
+            temperature: temperature,
             messages: [
               { role: 'user', content: prompt }
             ]
@@ -135,7 +145,15 @@ export class ClaudeProvider extends AIService {
         });
 
         if (response.status === 401 || response.status === 403) {
-          throw new Error('Claude API Key ungültig oder abgelaufen');
+          const errorText = await response.text();
+          let errorDetail = '';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorDetail = errorJson.error?.message || errorJson.message || errorText;
+          } catch {
+            errorDetail = errorText;
+          }
+          throw new Error(`Claude API Key ungültig: ${errorDetail.substring(0, 100)}`);
         }
 
         if (response.status === 404) {
@@ -144,8 +162,23 @@ export class ClaudeProvider extends AIService {
         }
 
         if (!response.ok) {
-          Logger.warn(`Model ${model} failed: ${response.status}`);
-          lastError = new Error(`${model}: ${response.status}`);
+          // Versuche die Fehlermeldung von der API zu extrahieren
+          let errorDetail = `Status ${response.status}`;
+          try {
+            const errorText = await response.text();
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorDetail = errorJson.error?.message || errorJson.message || errorText;
+            } catch {
+              errorDetail = errorText || `Status ${response.status}`;
+            }
+          } catch {
+            // Wenn das Lesen fehlschlägt, verwende den Status
+            errorDetail = `Status ${response.status}`;
+          }
+          
+          Logger.warn(`Model ${model} failed: ${errorDetail}`);
+          lastError = new Error(`${model}: ${errorDetail}`);
           continue;
         }
 
