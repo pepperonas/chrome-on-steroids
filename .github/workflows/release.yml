@@ -11,6 +11,8 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout code
@@ -50,6 +52,12 @@ jobs:
           zip -r ../chrome-on-steroids-v${{ steps.version.outputs.version }}.zip . -x "*.map" "*.d.ts" "*.d.ts.map"
           cd ..
           ls -lh chrome-on-steroids-v${{ steps.version.outputs.version }}.zip
+
+      - name: Configure GitHub CLI
+        run: |
+          gh auth setup-git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete existing latest release (if exists)
         run: |
