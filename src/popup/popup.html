@@ -262,6 +262,39 @@
               Bestimmt, wie intensiv Formatierungen (fett, kursiv) im Artikel verwendet werden
             </small>
           </div>
+
+          <h3>Chat-Optimierung</h3>
+          
+          <div class="form-group">
+            <label for="linkedin-chat-goal">Chat-Ziel</label>
+            <select id="linkedin-chat-goal">
+              <option value="networking">Networking - Kontakt aufbauen</option>
+              <option value="sales">Verkauf - Produkt/Service verkaufen</option>
+              <option value="collaboration">Kooperation - Zusammenarbeit anstreben</option>
+              <option value="job-inquiry">Job-Anfrage - Stellenangebot/Bewerbung</option>
+              <option value="information">Information - Informationen einholen</option>
+              <option value="custom">Benutzerdefiniert</option>
+            </select>
+            <small class="form-hint">
+              Bestimmt das Ziel der Chat-Konversation. Die KI wird Antworten generieren, die natürlich zu diesem Ziel führen.
+            </small>
+          </div>
+
+          <div class="form-group" id="linkedin-chat-goal-custom-group" style="display: none;">
+            <label for="linkedin-chat-goal-custom">Benutzerdefiniertes Chat-Ziel</label>
+            <textarea id="linkedin-chat-goal-custom" rows="3" placeholder="z.B. Terminvereinbarung für ein Beratungsgespräch"></textarea>
+            <small class="form-hint">
+              Beschreibe dein spezifisches Ziel für die Chat-Konversation
+            </small>
+          </div>
+
+          <div class="form-group" id="linkedin-chat-goal-sales-group" style="display: none;">
+            <label for="linkedin-chat-goal-sales-product">Was möchtest du verkaufen?</label>
+            <textarea id="linkedin-chat-goal-sales-product" rows="3" placeholder="z.B. Webentwicklung-Services, SaaS-Lösung für Projektmanagement, Beratungsdienstleistungen im Bereich Marketing"></textarea>
+            <small class="form-hint">
+              Beschreibe kurz das Produkt oder die Dienstleistung, die du verkaufen möchtest. Diese Information wird in den Chat-Antworten natürlich eingebracht.
+            </small>
+          </div>
         </div>
       </section>
       

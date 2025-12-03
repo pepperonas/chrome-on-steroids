@@ -38,8 +38,9 @@ export class InstagramDOMService {
 
   /**
    * Extrahiert den Original-Post, auf den geantwortet wird
+   * @param editorElement Optional: Editor-Element, in dessen Nähe nach dem Post gesucht werden soll
    */
-  static extractOriginalPostForComment(): string | null {
+  static extractOriginalPostForComment(editorElement?: HTMLTextAreaElement | null): string | null {
     try {
       // Suche nach dem Post-Content in der Nähe des Kommentar-Editors
       // Instagram verwendet verschiedene Selektoren für Post-Content
@@ -54,6 +55,76 @@ export class InstagramDOMService {
         'article [role="button"] + div span' // Nach Buttons
       ];
 
+      // Wenn ein Editor-Element übergeben wurde, suche zuerst in dessen Nähe
+      if (editorElement) {
+        Logger.info('[Instagram] Searching for post context near editor element');
+        
+        // Finde den nächstgelegenen Post-Container
+        let postContainer: HTMLElement | null = null;
+        
+        // Strategie 1: Suche nach article-Element in der Nähe
+        let current: HTMLElement | null = editorElement;
+        while (current && !postContainer) {
+          // Suche nach article-Element
+          const article = current.closest('article');
+          if (article) {
+            postContainer = article as HTMLElement;
+            break;
+          }
+          current = current.parentElement;
+        }
+        
+        // Strategie 2: Suche nach bekannten Instagram-Containern
+        if (!postContainer) {
+          const containerSelectors = [
+            '[role="article"]',
+            'article',
+            '[data-testid="post"]',
+            'div[role="presentation"]'
+          ];
+          
+          for (const selector of containerSelectors) {
+            const container = editorElement.closest(selector);
+            if (container) {
+              postContainer = container as HTMLElement;
+              break;
+            }
+          }
+        }
+        
+        // Wenn Container gefunden, suche innerhalb des Containers
+        if (postContainer) {
+          Logger.info('[Instagram] Post container found near editor, searching within container');
+          
+          for (const selector of postContentSelectors) {
+            try {
+              // Suche nur innerhalb des Containers
+              const elements = postContainer.querySelectorAll(selector);
+              for (const element of Array.from(elements)) {
+                const el = element as HTMLElement;
+                // Prüfe ob Element sichtbar ist und Text enthält
+                if (el.offsetParent !== null) {
+                  const text = el.innerText?.trim() || el.textContent?.trim() || '';
+                  // Mindestens 20 Zeichen, um relevante Posts zu finden
+                  // Aber nicht zu lang (max 1000 Zeichen), um nicht zu viel zu extrahieren
+                  if (text && text.length > 20 && text.length < 2000) {
+                    // Prüfe ob es nicht nur ein einzelnes Wort oder sehr kurzer Text ist
+                    const words = text.split(/\s+/).filter(w => w.length > 0);
+                    if (words.length >= 3) {
+                      Logger.info('[Instagram] Original post found near editor with selector:', selector, 'length:', text.length);
+                      return text.substring(0, 1000); // Maximal 1000 Zeichen für den Kontext
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              Logger.debug('[Instagram] Error with selector:', selector, error);
+            }
+          }
+        }
+      }
+
+      // Fallback: Globale Suche (wenn kein Editor-Element oder nichts in der Nähe gefunden)
       for (const selector of postContentSelectors) {
         try {
           const elements = document.querySelectorAll(selector);
@@ -174,21 +245,41 @@ export class InstagramDOMService {
         return false;
       }
 
-      // Setze den Wert
-      textarea.value = optimizedContent;
-      
-      // Trigger Events für React/Instagram
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
-      textarea.dispatchEvent(new Event('change', { bubbles: true }));
-      textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-
-      // Focus setzen
-      textarea.focus();
-
-      Logger.info('[Instagram] Optimized content inserted');
-      return true;
+      return this.insertOptimizedContentIntoEditor(textarea, optimizedContent);
     } catch (error) {
       Logger.error('[Instagram] Error inserting content:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Fügt optimierten Content in einen spezifischen Editor ein
+   */
+  static insertOptimizedContentIntoEditor(
+    editorElement: HTMLTextAreaElement,
+    optimizedContent: string
+  ): boolean {
+    try {
+      if (!editorElement || !document.body.contains(editorElement)) {
+        Logger.error('[Instagram] Editor element not found or not in DOM');
+        return false;
+      }
+
+      // Setze den Wert
+      editorElement.value = optimizedContent;
+      
+      // Trigger Events für React/Instagram
+      editorElement.dispatchEvent(new Event('input', { bubbles: true }));
+      editorElement.dispatchEvent(new Event('change', { bubbles: true }));
+      editorElement.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+
+      // Focus setzen
+      editorElement.focus();
+
+      Logger.info('[Instagram] Optimized content inserted into specific editor');
+      return true;
+    } catch (error) {
+      Logger.error('[Instagram] Error inserting content into editor:', error);
       return false;
     }
   }

@@ -13,10 +13,13 @@ import { ApiConfig } from '../../../shared/models/ApiConfig';
 export class ArticleOptimizer {
   
   /**
-   * Optimiert einen LinkedIn-Artikel/Post/Kommentar mit AI
+   * Optimiert einen LinkedIn-Artikel mit AI
    */
-  static async optimizeArticle(article: LinkedInArticle, type: 'article' | 'post' | 'comment' = 'article', originalPostContext?: string): Promise<string> {
-    Logger.info('[ArticleOptimizer] Starting optimization...', { article, type, hasPostContext: !!originalPostContext });
+  static async optimizeArticle(article: LinkedInArticle): Promise<string> {
+    Logger.info('[ArticleOptimizer] Starting article optimization...', { 
+      hasTitle: !!article.title,
+      contentLength: article.content.length 
+    });
 
     const apiConfig = await StorageService.load<ApiConfig>('apiConfig');
     if (!apiConfig || !apiConfig.apiKey) {
@@ -28,13 +31,13 @@ export class ArticleOptimizer {
     const highlightingIntensity = linkedInSettings?.highlightingIntensity || 'medium';
 
     const aiService = this.createAIService(apiConfig);
-    const prompt = this.buildPrompt(article, type, useStyling, highlightingIntensity, originalPostContext);
+    const prompt = this.buildArticlePrompt(article, useStyling, highlightingIntensity, article.addressForm);
 
     Logger.info('[ArticleOptimizer] Sending to AI...', { provider: apiConfig.provider, useStyling });
 
     const optimizedContent = await aiService.generateText(prompt);
 
-    Logger.info('[ArticleOptimizer] Optimization complete', { 
+    Logger.info('[ArticleOptimizer] Article optimization complete', { 
       originalLength: article.content.length,
       optimizedLength: optimizedContent.length 
     });
@@ -43,164 +46,112 @@ export class ArticleOptimizer {
   }
 
   /**
-   * Erstellt einen spezifischen Prompt für Kommentare/Antworten
+   * Erstellt einen spezifischen Prompt für Artikel
    */
-  private static buildCommentPrompt(comment: LinkedInArticle, originalPostContext?: string): string {
-    const hasUserInput = comment.content && comment.content.trim().length > 0;
+  private static buildArticlePrompt(article: LinkedInArticle, useStyling: boolean, highlightingIntensity: 'low' | 'medium' | 'high', addressForm?: 'du' | 'sie'): string {
+    const shouldUseStyling = useStyling;
+    // Bestimme die Ansprache-Form
+    const useDu = addressForm === 'du' || addressForm !== 'sie'; // Default: 'du'
     
-    // Wenn kein Post-Kontext vorhanden ist, aber Text eingegeben wurde, optimiere nur den Text
-    if (!originalPostContext && !hasUserInput) {
-      throw new Error('Post-Kontext fehlt und kein Kommentar-Text vorhanden. Bitte öffne einen Post und gib einen Kommentar ein.');
-    }
-    
-    // Wenn kein Post-Kontext vorhanden ist, aber Text vorhanden ist, optimiere nur den Text
-    if (!originalPostContext && hasUserInput) {
-      return `# AUFGABE: Optimiere diesen LinkedIn-Kommentar
+    return `# AUFGABE: Optimiere diesen LinkedIn-Artikel
 
 ## KONTEXT
-Du bist ein Experte für erfolgreiche LinkedIn-Kommentare. Deine Aufgabe ist es, einen Kommentar zu optimieren, den der Benutzer bereits eingegeben hat.
+Du bist ein Experte für erfolgreiche LinkedIn-Artikel. Deine Aufgabe ist es, den Artikel zu optimieren, um mehr Engagement, Likes, Kommentare und Reichweite zu erzielen.
 
-## DEIN KOMMENTAR (der optimiert werden soll)
-${comment.content}
+## ANSPRACHE-FORM
+${useDu ? '**WICHTIG:** Verwende die "Du"-Form (du/deine/dein) für die Ansprache der Leser.' : '**WICHTIG:** Verwende die "Sie"-Form (Sie/Ihre/Ihr) für die Ansprache der Leser.'}
 
-**WICHTIG:** 
-- BEHALTE die Kernaussage und den Gedanken des Benutzers bei
-- VERBESSERE die Formulierung, Struktur und Klarheit
-- Die optimierte Version soll die ursprüngliche Intention widerspiegeln, aber professioneller formuliert sein
+## ORIGINAL-ARTIKEL
+${article.title ? `**Titel:** ${article.title}` : '**Typ:** LinkedIn-Artikel'}
 
-## WICHTIG: Kommentar-Optimierung
+**Inhalt:**
+${article.content || '(Noch kein Inhalt vorhanden)'}
 
-### Was einen guten Kommentar ausmacht:
-- ✅ **Kurz und prägnant** - max. 2-3 Sätze (100-300 Zeichen)
-- ✅ **Wertvoll** - fügt echten Mehrwert hinzu (Perspektive, Erfahrung, Frage, Ergänzung)
-- ✅ **Natürlich und authentisch** - klingt wie eine echte menschliche Antwort
-- ✅ **Konkret statt vage** - spezifische Aussagen statt Floskeln
+## WICHTIG FÜR ARTIKEL:
+${article.title ? `- Der Titel "${article.title}" ist bereits optimiert und wird SEPARAT behandelt
+- Der Titel soll NICHT im Artikel-Text wiederholt oder erwähnt werden
+- Der Artikel-Text sollte sich auf den INHALT konzentrieren, nicht auf den Titel
+- KEINE Übersetzung des Titels ins Englische oder andere Sprachen!` : ''}
 
-### Was VERMEIDEN:
-- ❌ **Generische Floskeln** - "Sehr gut!", "Interessant!", "Danke fürs Teilen!" (ohne Mehrwert)
-- ❌ **Selbstreferenzielle Texte** - "Als LinkedIn-Experte empfehle ich..." (klingt wie Spam)
-- ❌ **Zu lang** - mehr als 3 Sätze
-- ❌ **Marketing-Sprech** - "Lass uns gemeinsam daran arbeiten..."
-- ❌ **Hashtags** - Kommentare haben keine Hashtags
-- ❌ **Call-to-Actions** - keine Aufforderungen zum Teilen/Liken
+## OPTIMIERUNGS-REGELN
 
-### Ton & Stil:
-- Authentisch und natürlich
-- Respektvoll und konstruktiv
-- Konkret statt vage
-- Kurz und prägnant
+### Struktur (WICHTIG):
+1. **Hook** (1-2 Sätze): Fesselnde Einleitung, die zum Weiterlesen animiert
+2. **Hauptteil** (3-5 Absätze): 
+   - Klare Struktur mit Absätzen
+   - Konkrete Beispiele und Geschichten
+   - Persönliche Erfahrungen (wenn vorhanden)
+   - Daten und Fakten (wenn relevant)
+3. **Call-to-Action** (1-2 Sätze): Aufforderung zum Engagement (Kommentar, Diskussion, etc.)
 
-## AUSGABE
-Gib NUR den optimierten Kommentar aus, ohne Kommentare oder Erklärungen.
-Maximal 300 Zeichen (2-3 Sätze).
-Der Text muss in der GLEICHEN SPRACHE wie das Original sein! KEINE ÜBERSETZUNG!
+### LinkedIn-Best-Practices:
+- ✅ **Erste Zeile ist entscheidend** - muss sofort Aufmerksamkeit erregen
+- ✅ **Kurze Absätze** - max. 3-4 Zeilen pro Absatz
+- ✅ **Emojis sparsam** - nur wenn es passt (max. 2-3)
+- ✅ **Fragen stellen** - regt zu Kommentaren an
+- ✅ **Persönliche Geschichten** - machen Artikel authentisch
+- ✅ **Wertvolle Insights** - teile Wissen, nicht nur Meinungen
+- ✅ **Hashtags** - am Ende 3-5 relevante Hashtags
 
-## QUALITÄTSKONTROLLE (VOR AUSGABE):
-✓ Prüfe dass der Kommentar kurz ist (max. 2-3 Sätze, 100-300 Zeichen)
-✓ Prüfe dass der Kommentar wertvoll ist (keine generischen Floskeln)
-✓ Prüfe Rechtschreibung
-✓ Prüfe dass der Kommentar natürlich klingt
-✓ Prüfe dass keine Hashtags enthalten sind
-✓ Prüfe dass keine Call-to-Actions enthalten sind
-✓ Prüfe dass die Sprache beibehalten wurde`;
-    }
-    const userInputSection = hasUserInput ? `
-## DEINE ANTWORT (die optimiert werden soll)
-${comment.content}
+${shouldUseStyling ? `### Formatierung (WICHTIG):
+Verwende Markdown-Formatierung für bessere Lesbarkeit:
+- **Fett** für wichtige Begriffe: \`**Text**\`
+- *Kursiv* für Betonung: \`*Text*\`
+- \`Code\` für technische Begriffe: \`\`Code\`\`
+- > Zitate für wichtige Aussagen: \`> Zitat\`
+- Code-Blöcke für längere Code-Beispiele: \`\`\`code\`\`\`
 
-**WICHTIG:** 
-- Diese Antwort wurde vom Benutzer bereits eingegeben und soll optimiert werden
-- BEHALTE die Kernaussage und den Gedanken des Benutzers bei
-- VERBESSERE die Formulierung, Struktur und Klarheit
-- STELLE den Bezug zum Original-Post her, wenn noch nicht vorhanden
-- Die optimierte Antwort soll die ursprüngliche Intention des Benutzers widerspiegeln, aber professioneller und wertvoller formuliert sein
-` : `
-## HINWEIS
-Der Benutzer hat noch keine Antwort eingegeben. Generiere eine passende Antwort basierend auf dem Original-Post.
-`;
+### Highlighting-Intensität: ${highlightingIntensity === 'low' ? 'NIEDRIG' : highlightingIntensity === 'high' ? 'HOCH' : 'MITTEL'}
+${highlightingIntensity === 'low' ? `- Verwende Formatierung SPARSAM - nur bei wirklich wichtigen Begriffen (max. 2-3 pro Absatz)
+- Fett nur für Kernbegriffe oder Schlüsselwörter
+- Kursiv nur für leichte Betonung
+- Keine übermäßige Formatierung` : highlightingIntensity === 'high' ? `- Verwende Formatierung INTENSIV - viele wichtige Begriffe formatieren
+- Fett für wichtige Konzepte, Zahlen, Namen, Produkte
+- Kursiv für Betonungen und Hervorhebungen
+- Code für technische Begriffe und Tools
+- Zitate für wichtige Aussagen` : `- Verwende Formatierung AUSGEWOGEN - wichtige Begriffe formatieren
+- Fett für wichtige Konzepte und Schlüsselwörter (3-5 pro Absatz)
+- Kursiv für Betonungen
+- Code für technische Begriffe
+- Zitate sparsam für besonders wichtige Aussagen`}
 
-    return `# AUFGABE: ${hasUserInput ? 'Optimiere diese' : 'Erstelle eine'} LinkedIn-Antwort/Kommentar
+**Beispiel (${highlightingIntensity === 'low' ? 'niedrig' : highlightingIntensity === 'high' ? 'hoch' : 'mittel'}):**
+\`\`\`
+${highlightingIntensity === 'low' ? `Dies ist ein wichtiger Punkt über **KI**.
 
-## KONTEXT
-Du bist ein Experte für erfolgreiche LinkedIn-Kommentare und Antworten. Deine Aufgabe ist es, ${hasUserInput ? 'eine Antwort zu optimieren, die der Benutzer bereits eingegeben hat' : 'eine passende Antwort zu erstellen'}, die auf einen bestehenden Post reagiert.
+Erfolg kommt durch kontinuierliche Anstrengung.` : highlightingIntensity === 'high' ? `**Wichtig:** Dies ist ein *wichtiger* Punkt über **KI** und **Machine Learning**.
 
-## ORIGINAL-POST (auf den geantwortet wird)
-${originalPostContext}
+> "Erfolg ist die Summe kleiner Anstrengungen, die jeden Tag wiederholt werden."
 
-**WICHTIG:** Deine Antwort muss sich auf DIESEN Post beziehen und relevant sein!
+Für \`JavaScript\` Entwickler: **React**, **TypeScript** und **Node.js** sind essentiell.` : `**Wichtig:** Dies ist ein *wichtiger* Punkt über **KI**.
 
-${userInputSection}
+> "Erfolg ist die Summe kleiner Anstrengungen."
 
-## WICHTIG: Unterschied zwischen Antwort und eigenständigem Post
-
-### Antwort/Kommentar:
-- ✅ **Reagiert auf den Original-Post** - bezieht sich direkt darauf
-- ✅ **Kurz und prägnant** - max. 2-3 Sätze (100-300 Zeichen)
-- ✅ **Relevant** - bezieht sich auf den Inhalt des Original-Posts
-- ✅ **Wertvoll** - fügt echten Mehrwert hinzu (Perspektive, Erfahrung, Frage, Ergänzung)
-- ✅ **Kontextbezogen** - macht nur Sinn im Zusammenhang mit dem Original-Post
-- ✅ **Keine Hashtags** - Kommentare haben keine Hashtags
-- ✅ **Keine Call-to-Actions** - keine Aufforderungen zum Teilen/Liken
-
-### Was eine gute Antwort ausmacht:
-1. **Bezug zum Original-Post** - zeigt, dass du den Post gelesen und verstanden hast
-2. **Kurze, prägnante Aussage** - direkt zum Punkt, keine langen Ausführungen
-3. **Mehrwert** - fügt etwas hinzu: Perspektive, Erfahrung, Frage, Ergänzung, konstruktive Kritik
-4. **Natürlich und authentisch** - klingt wie eine echte menschliche Antwort
-${hasUserInput ? `5. **Beibehaltung der Kernaussage** - die ursprüngliche Intention und der Gedanke des Benutzers bleiben erhalten, nur die Formulierung wird verbessert` : ''}
-
-### Struktur einer guten Antwort:
-1. **Bezug herstellen** (optional, 1 Satz): Kurze Referenz zum Post
-2. **Hauptaussage** (1-2 Sätze): Deine Antwort, Meinung, Erfahrung oder Frage
-3. **Optional: Ergänzung** (1 Satz): Falls relevant, zusätzlicher Punkt oder Frage
-
-### Beispiele für gute Antworten:
-
-**Beispiel 1 (Zustimmung mit Ergänzung):**
-"Interessanter Punkt! Aus meiner Erfahrung ist das auch ein wichtiger Aspekt. Wie siehst du die langfristigen Auswirkungen?"
-
-**Beispiel 2 (Perspektive teilen):**
-"Ähnliche Erfahrung gemacht. Bei uns hat sich gezeigt, dass [konkreter Punkt]. Was denkst du dazu?"
-
-**Beispiel 3 (Frage stellen):**
-"Spannend! Wie gehst du mit [spezifischer Herausforderung] um?"
-
-**Beispiel 4 (Konstruktive Ergänzung):**
-"Guter Beitrag! Ergänzend würde ich noch [spezifischer Punkt] erwähnen."
-
-### Was VERMEIDEN:
-- ❌ **Generische Floskeln** - "Sehr gut!", "Interessant!", "Danke fürs Teilen!" (ohne Mehrwert)
-- ❌ **Selbstreferenzielle Texte** - "Als LinkedIn-Experte empfehle ich..." (klingt wie Spam)
-- ❌ **Eigenständige Posts** - Texte, die wie ein eigener Post klingen
-- ❌ **Zu lang** - mehr als 3 Sätze
-- ❌ **Kein Bezug zum Post** - Antworten, die nichts mit dem Original-Post zu tun haben
-- ❌ **Marketing-Sprech** - "Lass uns gemeinsam daran arbeiten..."
-- ❌ **Hashtags** - Kommentare haben keine Hashtags
-- ❌ **Call-to-Actions** - keine Aufforderungen zum Teilen/Liken
+Für \`JavaScript\` Entwickler sind **React** und **TypeScript** wichtig.`}
+\`\`\`` : ''}
 
 ### Ton & Stil:
-- Authentisch und natürlich
-- Respektvoll und konstruktiv
+- Professionell aber zugänglich
+- Authentisch und persönlich
 - Konkret statt vage
-- Kurz und prägnant
-- Relevant zum Original-Post
+- Positiv und motivierend
+- Keine Übertreibungen oder Clickbait
 
 ## AUSGABE
-Gib NUR die optimierte Antwort aus, ohne Kommentare oder Erklärungen.
-Maximal 300 Zeichen (2-3 Sätze).
+Gib NUR den optimierten Artikel-Text aus, ohne Kommentare oder Erklärungen.
+Maximal 3000 Zeichen.
 Der Text muss in der GLEICHEN SPRACHE wie das Original sein! KEINE ÜBERSETZUNG!
-Die Antwort muss sich auf den Original-Post beziehen und relevant sein!
-${hasUserInput ? '**WICHTIG:** Die optimierte Antwort soll die ursprüngliche Aussage des Benutzers im Kontext des Posts verwerten und verbessern, nicht ersetzen!' : ''}
+${shouldUseStyling ? 'Der Text sollte Markdown-Formatierung enthalten (Fett, Kursiv, Code, Zitate).' : 'Der Text sollte als reiner Text formatiert sein.'}
 
 ## QUALITÄTSKONTROLLE (VOR AUSGABE):
-✓ Prüfe dass die Antwort kurz ist (max. 2-3 Sätze, 100-300 Zeichen)
-✓ Prüfe dass die Antwort sich auf den Original-Post bezieht
-✓ Prüfe dass die Antwort wertvoll ist (keine generischen Floskeln)
+✓ Prüfe dass der Artikel eine fesselnde Einleitung hat
+✓ Prüfe dass der Artikel eine klare Struktur hat
+✓ Prüfe dass der Artikel wertvolle Insights bietet
+✓ Prüfe dass der Artikel einen Call-to-Action hat
 ✓ Prüfe Rechtschreibung
-✓ Prüfe dass die Antwort natürlich klingt
-✓ Prüfe dass keine Hashtags enthalten sind
-✓ Prüfe dass keine Call-to-Actions enthalten sind
-✓ Prüfe dass die Sprache beibehalten wurde`;
+✓ Prüfe dass der Artikel natürlich und authentisch klingt
+✓ Prüfe dass die Sprache beibehalten wurde
+${shouldUseStyling ? `✓ Prüfe dass die Formatierung angemessen ist (${highlightingIntensity} Intensität)` : ''}`;
   }
 
   /**
@@ -296,145 +247,4 @@ Maximal 150 Zeichen.
 Der Titel muss in der GLEICHEN SPRACHE wie das Original sein!
 Der Titel sollte direkt verwendbar sein.`;
   }
-
-  /**
-   * Erstellt den Optimierungs-Prompt
-   */
-  private static buildPrompt(article: LinkedInArticle, type: 'article' | 'post' | 'comment' = 'article', useStyling: boolean = true, highlightingIntensity: 'low' | 'medium' | 'high' = 'medium', originalPostContext?: string): string {
-    // Formatierung nur für Artikel verwenden
-    const shouldUseStyling = type === 'article' && useStyling;
-    const contentType = type === 'comment' ? 'Kommentar/Antwort' : type === 'post' ? 'Beitrag' : 'Artikel';
-    const maxLength = type === 'comment' ? '300' : type === 'post' ? '2000' : '3000';
-    
-    // Spezieller Prompt für Kommentare/Antworten
-    if (type === 'comment') {
-      return this.buildCommentPrompt(article, originalPostContext);
-    }
-    
-    // Ab hier ist type nur noch 'article' | 'post'
-    return `# AUFGABE: Optimiere diesen LinkedIn-${contentType}
-
-## KONTEXT
-Du bist ein Experte für erfolgreiche LinkedIn-Inhalte. Deine Aufgabe ist es, den ${contentType} zu optimieren, um mehr Engagement, Likes, Kommentare und Reichweite zu erzielen.
-
-## ORIGINAL-${article.title ? 'ARTIKEL' : 'BEITRAG'}
-${article.title ? `**Titel:** ${article.title}` : '**Typ:** LinkedIn-Beitrag (Post)'}
-
-**Inhalt:**
-${article.content || '(Noch kein Inhalt vorhanden)'}
-
-## WICHTIG FÜR ARTIKEL:
-${type === 'article' && article.title ? `- Der Titel "${article.title}" ist bereits optimiert und wird SEPARAT behandelt
-- Der Titel soll NICHT im Artikel-Text wiederholt oder erwähnt werden
-- Der Artikel-Text sollte sich auf den INHALT konzentrieren, nicht auf den Titel
-- KEINE Übersetzung des Titels ins Englische oder andere Sprachen!` : ''}
-
-## OPTIMIERUNGS-REGELN
-
-### Struktur (WICHTIG):
-1. **Hook** (1-2 Sätze): Fesselnde Einleitung, die zum Weiterlesen animiert
-2. **Hauptteil** (${type === 'post' ? '2-4' : '3-5'} Absätze): 
-   - Klare Struktur mit Absätzen
-   - Konkrete Beispiele und Geschichten
-   - Persönliche Erfahrungen (wenn vorhanden)
-   - Daten und Fakten (wenn relevant)
-3. **Call-to-Action** (1-2 Sätze): Aufforderung zum Engagement (Kommentar, Diskussion, etc.)
-
-### LinkedIn-Best-Practices:
-- ✅ **Erste Zeile ist entscheidend** - muss sofort Aufmerksamkeit erregen
-- ✅ **Kurze Absätze** - max. 3-4 Zeilen pro Absatz
-- ✅ **Emojis sparsam** - nur wenn es passt (max. 2-3)
-- ✅ **Fragen stellen** - regt zu Kommentaren an
-- ✅ **Persönliche Geschichten** - machen ${contentType} authentisch
-- ✅ **Wertvolle Insights** - teile Wissen, nicht nur Meinungen
-- ✅ **Hashtags** - am Ende 3-5 relevante Hashtags (nur bei Posts/Artikeln)
-
-${shouldUseStyling ? `### Formatierung (WICHTIG):
-Verwende Markdown-Formatierung für bessere Lesbarkeit:
-- **Fett** für wichtige Begriffe: \`**Text**\`
-- *Kursiv* für Betonung: \`*Text*\`
-- \`Code\` für technische Begriffe: \`\`Code\`\`
-- > Zitate für wichtige Aussagen: \`> Zitat\`
-- Code-Blöcke für längere Code-Beispiele: \`\`\`code\`\`\`
-
-### Highlighting-Intensität: ${highlightingIntensity === 'low' ? 'NIEDRIG' : highlightingIntensity === 'high' ? 'HOCH' : 'MITTEL'}
-${highlightingIntensity === 'low' ? `- Verwende Formatierung SPARSAM - nur bei wirklich wichtigen Begriffen (max. 2-3 pro Absatz)
-- Fett nur für Kernbegriffe oder Schlüsselwörter
-- Kursiv nur für leichte Betonung
-- Keine übermäßige Formatierung` : highlightingIntensity === 'high' ? `- Verwende Formatierung INTENSIV - viele wichtige Begriffe formatieren
-- Fett für wichtige Konzepte, Zahlen, Namen, Produkte
-- Kursiv für Betonungen und Hervorhebungen
-- Code für technische Begriffe und Tools
-- Zitate für wichtige Aussagen` : `- Verwende Formatierung AUSGEWOGEN - wichtige Begriffe formatieren
-- Fett für wichtige Konzepte und Schlüsselwörter (3-5 pro Absatz)
-- Kursiv für Betonungen
-- Code für technische Begriffe
-- Zitate sparsam für besonders wichtige Aussagen`}
-
-**Beispiel (${highlightingIntensity === 'low' ? 'niedrig' : highlightingIntensity === 'high' ? 'hoch' : 'mittel'}):**
-\`\`\`
-${highlightingIntensity === 'low' ? `Dies ist ein wichtiger Punkt über **KI**.
-
-Erfolg kommt durch kontinuierliche Anstrengung.` : highlightingIntensity === 'high' ? `**Wichtig:** Dies ist ein *wichtiger* Punkt über **KI** und **Machine Learning**.
-
-> "Erfolg ist die Summe kleiner Anstrengungen, die jeden Tag wiederholt werden."
-
-Für \`JavaScript\` Entwickler: **React**, **TypeScript** und **Node.js** sind essentiell.` : `**Wichtig:** Dies ist ein *wichtiger* Punkt über **KI**.
-
-> "Erfolg ist die Summe kleiner Anstrengungen."
-
-Für \`JavaScript\` Entwickler sind **React** und **TypeScript** wichtig.`}
-\`\`\`` : ''}
-
-### Ton & Stil:
-- Professionell aber zugänglich
-- Authentisch und persönlich
-- Konkret statt vage
-- Positiv und motivierend
-- Keine Übertreibungen oder Clickbait
-
-### Was MUSS enthalten sein:
-- Alle wichtigen Punkte aus dem Original-${contentType}
-- Klare Struktur mit Absätzen
-- Call-to-Action am Ende
-- Relevante Hashtags (3-5, nur bei Posts/Artikeln)
-
-### Was VERMEIDEN:
-- Zu lange Absätze
-- Floskeln und Marketing-Sprech
-- Rechtschreibfehler
-- Zu viele Emojis
-- Clickbait-Formulierungen
-- Unnötige Wiederholungen
-
-## BEISPIEL-STRUKTUR:
-
-[Hook - fesselnde erste Zeile]
-
-[Absatz 1: Kontext oder persönliche Geschichte]
-
-[Absatz 2: Hauptpunkt mit Beispiel]
-
-[Absatz 3: Weitere Insights oder Erfahrungen]
-
-[Absatz 4: Praktische Tipps oder Learnings]
-
-[Call-to-Action: Frage oder Diskussionsaufforderung]
-
-#hashtag1 #hashtag2 #hashtag3
-
-## AUSGABE
-Gib NUR den optimierten ${contentType}-Inhalt aus, ohne Kommentare oder Erklärungen.
-Maximal ${maxLength} Zeichen.
-${article.title ? 'Der Titel wird separat behandelt, konzentriere dich auf den Inhalt.' : 'Für Posts: Der Inhalt sollte direkt postbar sein, mit Hashtags am Ende.'}
-
-## QUALITÄTSKONTROLLE (VOR AUSGABE):
-✓ Prüfe dass die erste Zeile fesselnd ist
-✓ Prüfe dass Absätze kurz sind (max. 3-4 Zeilen)
-✓ Prüfe Rechtschreibung
-✓ Prüfe dass ein Call-to-Action vorhanden ist
-✓ Prüfe dass Hashtags am Ende stehen (3-5)
-✓ Prüfe dass der Text natürlich klingt`;
-  }
 }
-

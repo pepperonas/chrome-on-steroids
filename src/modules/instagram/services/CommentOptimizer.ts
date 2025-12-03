@@ -35,12 +35,38 @@ export class CommentOptimizer {
       hasPostContext: !!originalPostContext 
     });
 
-    const apiConfig = await StorageService.load<ApiConfig>('apiConfig');
+    let apiConfig: ApiConfig | null;
+    let instagramSettings: InstagramSettings | null;
+    
+    try {
+      apiConfig = await StorageService.load<ApiConfig>('apiConfig');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      if (errorMessage.includes('Extension context invalidated') || 
+          errorMessage.includes('Extension wurde neu geladen') ||
+          errorMessage.includes('invalidated')) {
+        throw new Error('Extension wurde neu geladen. Bitte lade die Seite neu (F5 oder Strg+R).');
+      }
+      throw error;
+    }
+    
     if (!apiConfig || !apiConfig.apiKey) {
       throw new Error('API-Konfiguration fehlt. Bitte im Popup konfigurieren.');
     }
 
-    const instagramSettings = await StorageService.load<InstagramSettings>('instagram_settings') || {};
+    try {
+      instagramSettings = await StorageService.load<InstagramSettings>('instagram_settings') || {};
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      if (errorMessage.includes('Extension context invalidated') || 
+          errorMessage.includes('Extension wurde neu geladen') ||
+          errorMessage.includes('invalidated')) {
+        throw new Error('Extension wurde neu geladen. Bitte lade die Seite neu (F5 oder Strg+R).');
+      }
+      // Wenn Settings nicht geladen werden können, verwende Standardwerte
+      instagramSettings = {};
+    }
+    
     const mood = instagramSettings.mood || 'neutral';
 
     const aiService = this.createAIService(apiConfig);

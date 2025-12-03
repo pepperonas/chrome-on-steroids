@@ -1,5 +1,9 @@
 import { LinkedInDOMService } from './services/LinkedInDOMService';
 import { ArticleOptimizer } from './services/ArticleOptimizer';
+import { PostOptimizer } from './services/PostOptimizer';
+import { CommentOptimizer } from './services/CommentOptimizer';
+import { ChatOptimizer } from './services/ChatOptimizer';
+// ReplyOptimizer wird später verwendet, wenn Antworten auf Kommentare implementiert werden
 import { StorageService } from '../../shared/services/StorageService';
 import { LinkedInSettings } from './models/LinkedInSettings';
 import { LinkedInArticle } from './models/LinkedInArticle';
@@ -67,8 +71,9 @@ class LinkedInContentScript {
     // Beobachte das Share-Box-Modal für normale Posts
     this.observeShareBox();
     
-    // Beobachte Kommentar-Editoren mit FAB-Logik
+    // Beobachte Kommentar- und Chat-Editoren mit FAB-Logik
     this.observeCommentEditorsWithFAB();
+    this.observeChatEditorsWithFAB();
     
     // Beobachte URL-Änderungen für Artikel-Editor (pushstate und popstate)
     this.observeUrlChanges();
@@ -537,6 +542,248 @@ class LinkedInContentScript {
   }
   
   /**
+   * Beobachtet Chat-Editoren mit Floating Action Button (FAB) Logik
+   * Der FAB erscheint nur, wenn ein Chat-Editor fokussiert ist
+   */
+  private observeChatEditorsWithFAB(): void {
+    Logger.info('[LinkedIn] Starting to observe chat editors with FAB');
+    
+    // Erstelle den FAB einmalig (wird bereits in observeCommentEditorsWithFAB erstellt)
+    if (!this.floatingActionButton) {
+      this.createFloatingActionButton();
+    }
+    
+    // Funktion zum Finden und Anhängen von Event Listenern an alle Chat-Editoren
+    const attachFocusListeners = () => {
+      // Finde alle Chat-Editoren (priorisiere spezifische Selektoren)
+      const editorSelectors = [
+        '.msg-form__contenteditable[contenteditable="true"][role="textbox"]',
+        '.msg-form__contenteditable[contenteditable="true"]',
+        '.msg-form__contenteditable[role="textbox"]',
+        '.msg-form__contenteditable',
+        '.msg-send-form [contenteditable="true"]',
+        '.msg-form__texteditor [contenteditable="true"]',
+        '[data-test-msg-form__contenteditable]',
+        '.msg-form [contenteditable="true"]',
+        '.msg-form__editor [contenteditable="true"]',
+        '.msg-form__editor div[contenteditable="true"]',
+        'div.msg-form__contenteditable',
+        '[contenteditable="true"][role="textbox"][aria-multiline="true"]'
+      ];
+      
+      let foundEditors = 0;
+      
+      for (const selector of editorSelectors) {
+        const editors = document.querySelectorAll(selector);
+        Logger.debug(`[LinkedIn] Checking selector "${selector}": found ${editors.length} elements`);
+        
+        for (const editor of Array.from(editors)) {
+          const editorElement = editor as HTMLElement;
+          
+          // Prüfe ob Editor sichtbar ist
+          if (editorElement.offsetParent === null) {
+            Logger.debug(`[LinkedIn] Editor with selector "${selector}" has offsetParent === null, skipping`);
+            continue;
+          }
+          
+          if (editorElement.getAttribute('aria-hidden') === 'true') {
+            Logger.debug(`[LinkedIn] Editor with selector "${selector}" has aria-hidden="true", skipping`);
+            continue;
+          }
+          
+          const computedStyle = window.getComputedStyle(editorElement);
+          if (computedStyle.display === 'none') {
+            Logger.debug(`[LinkedIn] Editor with selector "${selector}" has display="none", skipping`);
+            continue;
+          }
+          
+          if (computedStyle.visibility === 'hidden') {
+            Logger.debug(`[LinkedIn] Editor with selector "${selector}" has visibility="hidden", skipping`);
+            continue;
+          }
+          
+          // Prüfe ob bereits Listener angehängt wurden
+          if (editorElement.hasAttribute('data-cos-chat-fab-listener')) {
+            Logger.debug(`[LinkedIn] Editor with selector "${selector}" already has listener, skipping`);
+            continue;
+          }
+          
+          // Markiere als bearbeitet
+          editorElement.setAttribute('data-cos-chat-fab-listener', 'true');
+          foundEditors++;
+          Logger.info(`[LinkedIn] Attaching FAB listener to chat editor with selector: ${selector}`);
+          
+          // Handler-Funktion für Editor-Aktivierung
+          const handleEditorActivation = () => {
+            this.focusedCommentEditor = editorElement; // Verwende gleiche Variable für beide Typen
+            this.showFloatingActionButton();
+            Logger.info('[LinkedIn] Chat editor activated, showing FAB');
+          };
+          
+          // Focus Event: Zeige FAB und speichere Editor
+          editorElement.addEventListener('focus', handleEditorActivation, true);
+          
+          // Click Event: Zeige FAB auch bei Klick (falls Focus nicht ausgelöst wird)
+          editorElement.addEventListener('click', () => {
+            setTimeout(handleEditorActivation, 50);
+          }, true);
+          
+          // Input Event: Zeige FAB wenn Text eingegeben wird
+          editorElement.addEventListener('input', () => {
+            if (document.activeElement === editorElement) {
+              handleEditorActivation();
+            }
+          }, true);
+          
+          // Prüfe ob dieser Editor bereits fokussiert ist
+          if (document.activeElement === editorElement) {
+            handleEditorActivation();
+          }
+          
+          // Blur Event: Verstecke FAB nach kurzer Verzögerung (falls nicht zu einem anderen Editor gewechselt wird)
+          editorElement.addEventListener('blur', () => {
+            // Kurze Verzögerung, um zu prüfen, ob ein anderer Editor fokussiert wird
+            setTimeout(() => {
+              const activeElement = document.activeElement;
+              // Prüfe ob ein anderer Chat- oder Kommentar-Editor fokussiert ist
+              if (!activeElement || 
+                  !(activeElement instanceof HTMLElement) ||
+                  (!LinkedInDOMService.isChatEditorVisible() && 
+                   !LinkedInDOMService.isCommentEditorVisible())) {
+                this.focusedCommentEditor = null;
+                this.hideFloatingActionButton();
+                Logger.info('[LinkedIn] Chat editor blurred, hiding FAB');
+              } else {
+                // Ein anderer Editor wurde fokussiert, aktualisiere Referenz
+                this.focusedCommentEditor = activeElement as HTMLElement;
+                this.showFloatingActionButton();
+              }
+            }, 150);
+          }, true);
+        }
+      }
+    };
+    
+    // Initiale Anhänge
+    attachFocusListeners();
+    
+    // Globaler Click-Handler für Chat-Editoren (Fallback, falls Focus nicht funktioniert)
+    // Verwende ein separates Event, um Konflikte mit dem Kommentar-Handler zu vermeiden
+    const chatClickHandler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+      
+      // Prüfe ob auf einen Chat-Editor geklickt wurde (nicht auf Kommentar-Editor)
+      const isCommentEditor = target.closest('.comments-comment-box') ||
+                             target.closest('.comments-comment-box__form') ||
+                             target.closest('.comments-comment-texteditor') ||
+                             target.closest('.comment-box');
+      
+      if (isCommentEditor) {
+        return; // Ignoriere Kommentar-Editoren
+      }
+      
+      // Prüfe ob es ein Chat-Editor ist
+      const editor = target.classList.contains('msg-form__contenteditable') ? target :
+                    target.closest('.msg-form__contenteditable') ||
+                    (target.hasAttribute('contenteditable') && 
+                     target.closest('.msg-form') &&
+                     !target.closest('.comments-comment-box'));
+      
+      if (editor instanceof HTMLElement && 
+          editor.offsetParent !== null &&
+          LinkedInDOMService.isChatPage()) {
+        setTimeout(() => {
+          this.focusedCommentEditor = editor;
+          this.showFloatingActionButton();
+          Logger.info('[LinkedIn] Chat editor clicked, showing FAB');
+        }, 100);
+      }
+    };
+    
+    document.addEventListener('click', chatClickHandler, true);
+    
+    // Prüfe initial, ob bereits ein Chat-Editor fokussiert ist (mehrfache Versuche)
+    const checkInitialFocus = () => {
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement) {
+        // Prüfe ob es ein Chat-Editor ist
+        const isChatEditor = activeElement.classList.contains('msg-form__contenteditable') ||
+                            activeElement.closest('.msg-form__contenteditable') ||
+                            (activeElement.hasAttribute('contenteditable') && 
+                             activeElement.closest('.msg-form') &&
+                             !activeElement.closest('.comments-comment-box'));
+        
+        if (isChatEditor && LinkedInDOMService.isChatEditorVisible()) {
+          const editor = activeElement.classList.contains('msg-form__contenteditable') ? activeElement :
+                        activeElement.closest('.msg-form__contenteditable') as HTMLElement ||
+                        activeElement.closest('[contenteditable="true"]') as HTMLElement ||
+                        activeElement;
+          if (editor instanceof HTMLElement && editor.offsetParent !== null) {
+            this.focusedCommentEditor = editor;
+            this.showFloatingActionButton();
+            Logger.info('[LinkedIn] Initial check: Chat editor already focused, showing FAB');
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+    
+    // Mehrfache Versuche
+    setTimeout(() => checkInitialFocus(), 500);
+    setTimeout(() => checkInitialFocus(), 1000);
+    setTimeout(() => checkInitialFocus(), 2000);
+    
+    // Beobachte Änderungen im DOM, um neue Chat-Editoren zu finden
+    const chatObserver = new MutationObserver(() => {
+      // Debounce: Lösche vorherigen Timeout
+      if (this.commentCheckTimeout) {
+        clearTimeout(this.commentCheckTimeout);
+      }
+      
+      this.commentCheckTimeout = window.setTimeout(() => {
+        attachFocusListeners();
+        
+        // Prüfe ob aktuell fokussierter Editor noch existiert
+        if (this.focusedCommentEditor && !document.body.contains(this.focusedCommentEditor)) {
+          this.focusedCommentEditor = null;
+          this.hideFloatingActionButton();
+        }
+        
+        // Prüfe ob ein Chat-Editor bereits fokussiert ist
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement) {
+          // Prüfe ob es ein Chat-Editor ist
+          const isChatEditor = activeElement.classList.contains('msg-form__contenteditable') ||
+                              activeElement.closest('.msg-form__contenteditable') ||
+                              (activeElement.hasAttribute('contenteditable') && 
+                               activeElement.closest('.msg-form'));
+          
+          if (isChatEditor && LinkedInDOMService.isChatEditorVisible()) {
+            const editor = activeElement.classList.contains('msg-form__contenteditable') ? activeElement :
+                          activeElement.closest('.msg-form__contenteditable') as HTMLElement ||
+                          activeElement.closest('[contenteditable="true"]') as HTMLElement ||
+                          activeElement;
+            if (editor instanceof HTMLElement && editor.offsetParent !== null) {
+              this.focusedCommentEditor = editor;
+              this.showFloatingActionButton();
+              Logger.info('[LinkedIn] MutationObserver: Chat editor focused, showing FAB');
+            }
+          }
+        }
+      }, 300);
+    });
+
+    chatObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['aria-hidden', 'class', 'style', 'contenteditable']
+    });
+  }
+
+  /**
    * Erstellt den Floating Action Button (FAB)
    */
   private createFloatingActionButton(): void {
@@ -550,8 +797,8 @@ class LinkedInContentScript {
       <span class="cos-fab-icon">💎</span>
       <span class="cos-fab-text">Optimieren</span>
     `;
-    fab.title = 'Kommentar optimieren';
-    fab.setAttribute('aria-label', 'Kommentar optimieren');
+    fab.title = 'Nachricht optimieren';
+    fab.setAttribute('aria-label', 'Nachricht optimieren');
     
     // Styling
     fab.style.cssText = `
@@ -590,20 +837,107 @@ class LinkedInContentScript {
       }
     });
     
-    // Click Event
-    fab.addEventListener('click', (e) => {
+    // Longpress Detection (2 Sekunden für "Sie")
+    let pressTimer: number | null = null;
+    let isLongPress = false;
+    
+    fab.addEventListener('mousedown', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      isLongPress = false;
+      pressTimer = window.setTimeout(() => {
+        isLongPress = true;
+        // Visual Feedback für Longpress
+        fab.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+        fab.innerHTML = `
+          <span class="cos-fab-icon">👔</span>
+          <span class="cos-fab-text">Sie-Form</span>
+        `;
+      }, 2000); // 2 Sekunden
+    });
+    
+    fab.addEventListener('mouseup', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
       
       // Stelle sicher, dass der Editor noch fokussiert ist oder fokussiere ihn wieder
       if (this.focusedCommentEditor && document.body.contains(this.focusedCommentEditor)) {
-        // Kurze Verzögerung, damit der Click-Event verarbeitet wird, bevor wir fokussieren
         setTimeout(() => {
           this.focusedCommentEditor?.focus();
         }, 50);
       }
       
-      this.handleFABOptimizeClick();
+      // Bestimme Ansprache-Form: Longpress = "sie", normaler Klick = "du"
+      const addressForm: 'du' | 'sie' = isLongPress ? 'sie' : 'du';
+      
+      // Reset Button-Style
+      fab.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      fab.innerHTML = `
+        <span class="cos-fab-icon">💎</span>
+        <span class="cos-fab-text">Optimieren</span>
+      `;
+      
+      this.handleFABOptimizeClick(addressForm);
+      isLongPress = false;
+    });
+    
+    fab.addEventListener('mouseleave', () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      // Reset Button-Style wenn Maus verlassen wird
+      fab.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      fab.innerHTML = `
+        <span class="cos-fab-icon">💎</span>
+        <span class="cos-fab-text">Optimieren</span>
+      `;
+      isLongPress = false;
+    });
+    
+    // Touch Events für Mobile
+    fab.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isLongPress = false;
+      pressTimer = window.setTimeout(() => {
+        isLongPress = true;
+        fab.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+        fab.innerHTML = `
+          <span class="cos-fab-icon">👔</span>
+          <span class="cos-fab-text">Sie-Form</span>
+        `;
+      }, 2000);
+    });
+    
+    fab.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      
+      if (this.focusedCommentEditor && document.body.contains(this.focusedCommentEditor)) {
+        setTimeout(() => {
+          this.focusedCommentEditor?.focus();
+        }, 50);
+      }
+      
+      const addressForm: 'du' | 'sie' = isLongPress ? 'sie' : 'du';
+      
+      fab.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      fab.innerHTML = `
+        <span class="cos-fab-icon">💎</span>
+        <span class="cos-fab-text">Optimieren</span>
+      `;
+      
+      this.handleFABOptimizeClick(addressForm);
+      isLongPress = false;
     });
     
     document.body.appendChild(fab);
@@ -659,8 +993,9 @@ class LinkedInContentScript {
   
   /**
    * Behandelt Klick auf den Floating Action Button
+   * @param addressForm Die Ansprache-Form: 'du' für normalen Klick, 'sie' für Longpress
    */
-  private async handleFABOptimizeClick(): Promise<void> {
+  private async handleFABOptimizeClick(addressForm: 'du' | 'sie' = 'du'): Promise<void> {
     if (this.isProcessing || !this.focusedCommentEditor || !this.floatingActionButton) {
       return;
     }
@@ -686,52 +1021,109 @@ class LinkedInContentScript {
       `;
       this.floatingActionButton.style.pointerEvents = 'none';
       
-      // Extrahiere Original-Post-Kontext basierend auf dem Editor-Element (nicht auf dem aktuell fokussierten Element)
-      const originalPostContext = LinkedInDOMService.extractOriginalPostForComment(editorElement);
+      // Prüfe ob es sich um einen Chat-Editor oder Kommentar-Editor handelt
+      const isChatEditor = LinkedInDOMService.isChatEditorVisible() && 
+                          (editorElement.closest('.msg-form') || 
+                           editorElement.classList.contains('msg-form__contenteditable'));
       
-      // Extrahiere Kommentar-Daten aus dem Editor-Element
-      const commentContent = editorElement.innerText?.trim() || 
-                            editorElement.textContent?.trim() || '';
+      let optimizedContent: string;
       
-      // Wenn weder Post-Kontext noch Kommentar-Text vorhanden ist, Fehler werfen
-      if (!originalPostContext && !commentContent) {
-        throw new Error('Post-Kontext konnte nicht gefunden werden und kein Kommentar-Text vorhanden. Bitte öffne einen Post und gib einen Kommentar ein.');
+      if (isChatEditor) {
+        // Extrahiere Chat-Verlauf für Kontext
+        const chatHistory = LinkedInDOMService.extractChatHistory(10);
+        
+        if (!chatHistory) {
+          throw new Error('Chat-Verlauf konnte nicht gefunden werden. Bitte öffne einen Chat mit Nachrichten.');
+        }
+        
+        Logger.info('[LinkedIn] Chat history extracted:', {
+          historyLength: chatHistory.length
+        });
+        
+        // Generiere neue Chat-Antwort basierend auf Verlauf
+        this.floatingActionButton.innerHTML = `
+          <span class="cos-fab-icon" style="animation: spin 1s linear infinite;">⏳</span>
+          <span class="cos-fab-text">KI arbeitet...</span>
+        `;
+        
+        // Lade LinkedIn-Einstellungen für Chat-Ziel
+        const linkedInSettings = await StorageService.load<LinkedInSettings>('linkedin_settings');
+        const chatGoal = linkedInSettings?.chatGoal || 'networking';
+        let chatGoalText = chatGoal === 'custom' && linkedInSettings?.chatGoalCustom 
+          ? linkedInSettings.chatGoalCustom 
+          : chatGoal;
+        
+        // Wenn Verkauf ausgewählt ist, füge Produkt-Information hinzu
+        if (chatGoal === 'sales' && linkedInSettings?.chatGoalSalesProduct) {
+          chatGoalText = `sales:${linkedInSettings.chatGoalSalesProduct}`;
+        }
+        
+        // Erstelle leeres Chat-Message-Objekt (wird nicht verwendet, nur für API-Kompatibilität)
+        const chatMessage: LinkedInArticle = {
+          title: '',
+          content: '' // Leer, da wir eine neue Antwort generieren, nicht optimieren
+        };
+        
+        optimizedContent = await ChatOptimizer.optimizeChat(
+          { ...chatMessage, addressForm },
+          chatHistory, // Chat-Verlauf als Kontext
+          chatGoalText // Chat-Ziel
+        );
+        
+        Logger.info('[LinkedIn] Chat response generated:', {
+          historyLength: chatHistory.length,
+          responseLength: optimizedContent.length
+        });
+      } else {
+        // Kommentar optimieren
+        // Extrahiere Original-Post-Kontext basierend auf dem Editor-Element (nicht auf dem aktuell fokussierten Element)
+        const originalPostContext = LinkedInDOMService.extractOriginalPostForComment(editorElement);
+        
+        // Extrahiere Kommentar-Daten aus dem Editor-Element
+        const commentContent = editorElement.innerText?.trim() || 
+                              editorElement.textContent?.trim() || '';
+        
+        // Wenn weder Post-Kontext noch Kommentar-Text vorhanden ist, Fehler werfen
+        if (!originalPostContext && !commentContent) {
+          throw new Error('Post-Kontext konnte nicht gefunden werden und kein Kommentar-Text vorhanden. Bitte öffne einen Post und gib einen Kommentar ein.');
+        }
+        
+        // Wenn kein Post-Kontext gefunden wurde, aber Text vorhanden ist, optimiere nur den Text
+        if (!originalPostContext && commentContent) {
+          Logger.warn('[LinkedIn] Post context not found, but comment text available. Optimizing comment without context.');
+        }
+        
+        const commentData: LinkedInArticle = {
+          title: '',
+          content: commentContent,
+          addressForm
+        };
+        
+        Logger.info('[LinkedIn] Comment data extracted from focused editor:', {
+          commentLength: commentData.content.length,
+          hasPostContext: !!originalPostContext,
+          isEmpty: !commentData.content,
+          addressForm
+        });
+        
+        // Optimiere Kommentar
+        this.floatingActionButton.innerHTML = `
+          <span class="cos-fab-icon" style="animation: spin 1s linear infinite;">⏳</span>
+          <span class="cos-fab-text">KI arbeitet...</span>
+        `;
+        
+        // Optimiere Kommentar (mit oder ohne Post-Kontext)
+        optimizedContent = await CommentOptimizer.optimizeComment(
+          commentData, 
+          originalPostContext || undefined
+        );
+      
+        Logger.info('[LinkedIn] Comment optimized:', {
+          originalLength: commentData.content.length,
+          optimizedLength: optimizedContent.length,
+          wasGeneratedFromContext: !commentData.content
+        });
       }
-      
-      // Wenn kein Post-Kontext gefunden wurde, aber Text vorhanden ist, optimiere nur den Text
-      if (!originalPostContext && commentContent) {
-        Logger.warn('[LinkedIn] Post context not found, but comment text available. Optimizing comment without context.');
-      }
-      
-      const commentData: LinkedInArticle = {
-        title: '',
-        content: commentContent
-      };
-      
-      Logger.info('[LinkedIn] Comment data extracted from focused editor:', {
-        commentLength: commentData.content.length,
-        hasPostContext: !!originalPostContext,
-        isEmpty: !commentData.content
-      });
-      
-      // Optimiere Kommentar
-      this.floatingActionButton.innerHTML = `
-        <span class="cos-fab-icon" style="animation: spin 1s linear infinite;">⏳</span>
-        <span class="cos-fab-text">KI arbeitet...</span>
-      `;
-      
-      // Optimiere Kommentar (mit oder ohne Post-Kontext)
-      const optimizedContent = await ArticleOptimizer.optimizeArticle(
-        commentData, 
-        'comment', 
-        originalPostContext || undefined
-      );
-      
-      Logger.info('[LinkedIn] Comment optimized:', {
-        originalLength: commentData.content.length,
-        optimizedLength: optimizedContent.length,
-        wasGeneratedFromContext: !commentData.content
-      });
       
       // Füge optimierten Content in den Editor ein (verwende gespeicherte Referenz)
       const inserted = LinkedInDOMService.insertOptimizedContentIntoEditor(
@@ -745,7 +1137,7 @@ class LinkedInContentScript {
       }, 100);
       
       if (!inserted) {
-        throw new Error('Kommentar konnte nicht eingefügt werden. Bitte versuche es erneut.');
+        throw new Error(isChatEditor ? 'Chat-Nachricht konnte nicht eingefügt werden. Bitte versuche es erneut.' : 'Kommentar konnte nicht eingefügt werden. Bitte versuche es erneut.');
       }
       
       // Success State
@@ -755,10 +1147,10 @@ class LinkedInContentScript {
       `;
       this.floatingActionButton.style.background = 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)';
       
-      Logger.info('[LinkedIn] ✅ Comment optimized successfully');
+      Logger.info(`[LinkedIn] ✅ ${isChatEditor ? 'Chat message' : 'Comment'} optimized successfully`);
       
       // Zeige Toast
-      this.showToast('Kommentar erfolgreich optimiert!', 'success');
+      this.showToast(isChatEditor ? 'Chat-Nachricht erfolgreich optimiert!' : 'Kommentar erfolgreich optimiert!', 'success');
       
       // Reset nach 2 Sekunden
       setTimeout(() => {
@@ -863,7 +1255,90 @@ class LinkedInContentScript {
     button.style.cursor = 'pointer';
     button.title = 'Artikel-Inhalt mit KI optimieren';
 
-    button.addEventListener('click', () => this.handleOptimizeClick());
+    // Longpress Detection (2 Sekunden für "Sie")
+    let pressTimer: number | null = null;
+    let isLongPress = false;
+    
+    button.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isLongPress = false;
+      pressTimer = window.setTimeout(() => {
+        isLongPress = true;
+        button.style.backgroundColor = '#f5576c';
+        button.innerHTML = `
+          <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <span>Sie-Form</span>
+        `;
+      }, 2000);
+    });
+    
+    button.addEventListener('mouseup', () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      const addressForm: 'du' | 'sie' = isLongPress ? 'sie' : 'du';
+      button.style.backgroundColor = '';
+      button.innerHTML = `
+        <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <span>💎 Optimieren</span>
+      `;
+      this.handleOptimizeClick(addressForm);
+      isLongPress = false;
+    });
+    
+    button.addEventListener('mouseleave', () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      button.style.backgroundColor = '';
+      button.innerHTML = `
+        <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <span>💎 Optimieren</span>
+      `;
+      isLongPress = false;
+    });
+    
+    // Touch Events für Mobile
+    button.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isLongPress = false;
+      pressTimer = window.setTimeout(() => {
+        isLongPress = true;
+        button.style.backgroundColor = '#f5576c';
+        button.innerHTML = `
+          <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <span>Sie-Form</span>
+        `;
+      }, 2000);
+    });
+    
+    button.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      const addressForm: 'du' | 'sie' = isLongPress ? 'sie' : 'du';
+      button.style.backgroundColor = '';
+      button.innerHTML = `
+        <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <span>💎 Optimieren</span>
+      `;
+      this.handleOptimizeClick(addressForm);
+      isLongPress = false;
+    });
 
     container.appendChild(button);
     this.optimizeButton = button;
@@ -936,10 +1411,92 @@ class LinkedInContentScript {
     button.style.marginRight = '8px';
     button.title = 'Beitrag mit KI optimieren';
 
-    button.addEventListener('click', (e) => {
+    // Longpress Detection (2 Sekunden für "Sie")
+    let pressTimer: number | null = null;
+    let isLongPress = false;
+    
+    button.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isLongPress = false;
+      pressTimer = window.setTimeout(() => {
+        isLongPress = true;
+        button.style.backgroundColor = '#f5576c';
+        button.innerHTML = `
+          <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <span>Sie-Form</span>
+        `;
+      }, 2000);
+    });
+    
+    button.addEventListener('mouseup', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      this.handlePostOptimizeClick();
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      const addressForm: 'du' | 'sie' = isLongPress ? 'sie' : 'du';
+      button.style.backgroundColor = '';
+      button.innerHTML = `
+        <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <span>💎 Optimieren</span>
+      `;
+      this.handlePostOptimizeClick(addressForm);
+      isLongPress = false;
+    });
+    
+    button.addEventListener('mouseleave', () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      button.style.backgroundColor = '';
+      button.innerHTML = `
+        <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <span>💎 Optimieren</span>
+      `;
+      isLongPress = false;
+    });
+    
+    // Touch Events für Mobile
+    button.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isLongPress = false;
+      pressTimer = window.setTimeout(() => {
+        isLongPress = true;
+        button.style.backgroundColor = '#f5576c';
+        button.innerHTML = `
+          <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <span>Sie-Form</span>
+        `;
+      }, 2000);
+    });
+    
+    button.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      const addressForm: 'du' | 'sie' = isLongPress ? 'sie' : 'du';
+      button.style.backgroundColor = '';
+      button.innerHTML = `
+        <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <span>💎 Optimieren</span>
+      `;
+      this.handlePostOptimizeClick(addressForm);
+      isLongPress = false;
     });
 
     container.appendChild(button);
@@ -951,8 +1508,9 @@ class LinkedInContentScript {
 
   /**
    * Behandelt Klick auf "Post optimieren"
+   * @param addressForm Die Ansprache-Form: 'du' für normalen Klick, 'sie' für Longpress
    */
-  private async handlePostOptimizeClick(): Promise<void> {
+  private async handlePostOptimizeClick(addressForm: 'du' | 'sie' = 'du'): Promise<void> {
     if (this.isProcessing || !this.postOptimizeButton) return;
 
     this.isProcessing = true;
@@ -987,7 +1545,7 @@ class LinkedInContentScript {
         <span>KI arbeitet...</span>
       `;
 
-      const optimizedContent = await ArticleOptimizer.optimizeArticle(post, 'post');
+      const optimizedContent = await PostOptimizer.optimizePost({ ...post, addressForm });
 
       Logger.info('[LinkedIn] Post optimized:', {
         originalLength: post.content.length,
@@ -1063,7 +1621,11 @@ class LinkedInContentScript {
   /**
    * Behandelt Klick auf "Artikel optimieren"
    */
-  private async handleOptimizeClick(): Promise<void> {
+  /**
+   * Behandelt Klick auf "Artikel optimieren"
+   * @param addressForm Die Ansprache-Form: 'du' für normalen Klick, 'sie' für Longpress
+   */
+  private async handleOptimizeClick(addressForm: 'du' | 'sie' = 'du'): Promise<void> {
     if (this.isProcessing || !this.optimizeButton) return;
 
     this.isProcessing = true;
@@ -1158,7 +1720,7 @@ class LinkedInContentScript {
         content: contentWithoutTitle
       };
 
-      const optimizedContent = await ArticleOptimizer.optimizeArticle(articleForOptimization, 'article');
+      const optimizedContent = await ArticleOptimizer.optimizeArticle({ ...articleForOptimization, addressForm });
 
       Logger.info('[LinkedIn] Article optimized:', {
         originalLength: article.content.length,

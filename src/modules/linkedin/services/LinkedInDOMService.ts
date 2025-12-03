@@ -6,6 +6,87 @@ import { LinkedInArticle } from '../models/LinkedInArticle';
  */
 export class LinkedInDOMService {
   /**
+   * Bereinigt den Content (keine Erkennung von --du/--sie mehr, da über Button-Klick gesteuert)
+   * @param content Der zu bereinigende Content
+   * @returns Der bereinigte Content (aktuell unverändert, für zukünftige Bereinigungen)
+   */
+  static cleanContent(content: string): string {
+    return content.trim();
+  }
+
+  /**
+   * @deprecated Wird nicht mehr verwendet - Ansprache-Form wird über Button-Klick gesteuert
+   */
+  static detectAndRemoveAddressForm(content: string): { cleanedContent: string; addressForm?: 'du' | 'sie' } {
+    let cleanedContent = content;
+    let addressForm: 'du' | 'sie' | undefined = undefined;
+
+    // DEBUG: Logge den Input
+    Logger.info('[LinkedIn] 🔍 detectAndRemoveAddressForm called with:', {
+      content: content,
+      contentLength: content.length
+    });
+
+    // Prüfe auf --du (case-insensitive)
+    // Erkennt: --du am Anfang, Ende, oder mit Leerzeichen davor/danach
+    const duPattern = /(^|\s)--du(\s|$)/i;
+    const duMatch = duPattern.test(content);
+    Logger.info('[LinkedIn] 🔍 Testing --du pattern:', {
+      pattern: '/(^|\\s)--du(\\s|$)/i',
+      testResult: duMatch,
+      content: content
+    });
+    
+    if (duMatch) {
+      addressForm = 'du';
+      const beforeReplace = cleanedContent;
+      cleanedContent = cleanedContent.replace(/(^|\s)--du(\s|$)/gi, (_match, before, after) => {
+        // Entferne --du, behalte Leerzeichen nur wenn beide vorhanden sind
+        if (before && after) return ' '; // Leerzeichen davor und danach -> ein Leerzeichen
+        return before || after || ''; // Nur davor oder danach -> behalte das Leerzeichen
+      }).trim();
+      Logger.info('[LinkedIn] 🔍 --du detected and removed:', {
+        before: beforeReplace,
+        after: cleanedContent,
+        addressForm: 'du'
+      });
+    }
+    
+    // Prüfe auf --sie (case-insensitive)
+    // Erkennt: --sie am Anfang, Ende, oder mit Leerzeichen davor/danach
+    const siePattern = /(^|\s)--sie(\s|$)/i;
+    const sieMatch = siePattern.test(content);
+    Logger.info('[LinkedIn] 🔍 Testing --sie pattern:', {
+      pattern: '/(^|\\s)--sie(\\s|$)/i',
+      testResult: sieMatch,
+      content: content
+    });
+    
+    if (sieMatch) {
+      addressForm = 'sie';
+      const beforeReplace = cleanedContent;
+      cleanedContent = cleanedContent.replace(/(^|\s)--sie(\s|$)/gi, (_match, before, after) => {
+        // Entferne --sie, behalte Leerzeichen nur wenn beide vorhanden sind
+        if (before && after) return ' '; // Leerzeichen davor und danach -> ein Leerzeichen
+        return before || after || ''; // Nur davor oder danach -> behalte das Leerzeichen
+      }).trim();
+      Logger.info('[LinkedIn] 🔍 --sie detected and removed:', {
+        before: beforeReplace,
+        after: cleanedContent,
+        addressForm: 'sie'
+      });
+    }
+
+    Logger.info('[LinkedIn] 🔍 detectAndRemoveAddressForm result:', {
+      originalContent: content,
+      cleanedContent: cleanedContent,
+      addressForm: addressForm || 'nicht erkannt'
+    });
+
+    return { cleanedContent, addressForm };
+  }
+
+  /**
    * Prüft ob wir auf der LinkedIn Artikel-Erstellen- oder Bearbeiten-Seite sind
    */
   static isArticleEditorPage(): boolean {
@@ -38,6 +119,54 @@ export class LinkedInDOMService {
         if (element.getAttribute('aria-hidden') === 'false' || 
             element.offsetParent !== null) {
           Logger.info('[LinkedIn] Share box found with selector:', selector);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Prüft ob wir auf einer LinkedIn Chat/Messaging-Seite sind
+   */
+  static isChatPage(): boolean {
+    return window.location.hostname.includes('linkedin.com') &&
+           (window.location.pathname.includes('/messaging/') ||
+            window.location.pathname.includes('/inbox/') ||
+            window.location.pathname.includes('/mynetwork/invite-manager/'));
+  }
+
+  /**
+   * Prüft ob ein Chat-Editor sichtbar ist
+   */
+  static isChatEditorVisible(): boolean {
+    // Verschiedene Selektoren für Chat-Editoren
+    const selectors = [
+      '.msg-form__contenteditable[contenteditable="true"]',
+      '.msg-form__contenteditable[role="textbox"]',
+      '.msg-form__contenteditable',
+      '.msg-send-form [contenteditable="true"]',
+      '.msg-form__texteditor [contenteditable="true"]',
+      '[data-test-msg-form__contenteditable]',
+      '.msg-form [contenteditable="true"]',
+      '.msg-form__editor [contenteditable="true"]',
+      '.msg-form__editor div[contenteditable="true"]',
+      'div.msg-form__contenteditable[contenteditable="true"][role="textbox"]'
+    ];
+
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll(selector);
+      for (const element of Array.from(elements)) {
+        const chatEditor = element as HTMLElement;
+        // Prüfe ob Element sichtbar ist (offsetParent ist nicht null)
+        // und nicht versteckt ist
+        if (chatEditor && 
+            chatEditor.offsetParent !== null &&
+            chatEditor.getAttribute('aria-hidden') !== 'true' &&
+            window.getComputedStyle(chatEditor).display !== 'none' &&
+            window.getComputedStyle(chatEditor).visibility !== 'hidden') {
+          Logger.info('[LinkedIn] Chat editor found with selector:', selector);
           return true;
         }
       }
@@ -104,23 +233,80 @@ export class LinkedInDOMService {
       const titleTextarea = document.querySelector('#article-editor-headline__textarea') as HTMLTextAreaElement;
       const title = titleTextarea?.value?.trim() || '';
 
-      // Content extrahieren
-      const contentEditor = document.querySelector('[data-test-article-editor-content-textbox]') as HTMLElement;
-      const content = contentEditor?.innerText?.trim() || contentEditor?.textContent?.trim() || '';
+      // Content extrahieren - verschiedene Selektoren für Artikel-Editor
+      let contentEditor: HTMLElement | null = null;
+      const articleEditorSelectors = [
+        '[data-test-article-editor-content-textbox]',
+        '.article-editor-paragraph',
+        '.article-editor-content',
+        'p.article-editor-paragraph',
+        '[data-placeholder*="Geben Sie Ihren Text"]'
+      ];
+      
+      for (const selector of articleEditorSelectors) {
+        const element = document.querySelector(selector) as HTMLElement;
+        if (element && element.offsetParent !== null) {
+          contentEditor = element;
+          Logger.info('[LinkedIn] Article editor found with selector:', selector);
+          break;
+        }
+      }
+      
+      let content = '';
+      if (contentEditor) {
+        content = contentEditor.innerText?.trim() || contentEditor.textContent?.trim() || '';
+        
+        // Falls leer, versuche aus <p> Tags zu extrahieren
+        if (!content || content === '' || content === '\n') {
+          const paragraphs = contentEditor.querySelectorAll('p');
+          if (paragraphs.length > 0) {
+            const extracted = Array.from(paragraphs)
+              .map(p => {
+                const text = p.textContent?.trim() || '';
+                if (text === '' && (p.innerHTML.trim() === '<br>' || p.innerHTML.trim() === '<br/>')) {
+                  return '';
+                }
+                return text;
+              })
+              .filter(p => p.length > 0)
+              .join('\n');
+            if (extracted) {
+              content = extracted;
+            }
+          }
+        }
+      }
 
       if (!title && !content) {
         Logger.warn('[LinkedIn] No article data found');
         return null;
       }
 
-      Logger.info('[LinkedIn] Article data extracted:', {
+      // DEBUG: Logge den rohen Content aus dem Artikel-Editor
+      Logger.info('[LinkedIn] 🔍 RAW CONTENT from article editor:', {
+        rawTitle: title,
+        rawContent: content,
         titleLength: title.length,
-        contentLength: content.length
+        contentLength: content.length,
+        contentEditorHTML: contentEditor?.innerHTML?.substring(0, 200)
+      });
+
+      // Bereinige Titel und Content
+      const cleanedTitle = title ? this.cleanContent(title) : '';
+      const cleanedContentText = this.cleanContent(content);
+
+      Logger.info('[LinkedIn] Article data extracted:', {
+        rawTitle: title,
+        rawContent: content,
+        cleanedTitle: cleanedTitle,
+        cleanedContent: cleanedContentText,
+        titleLength: cleanedTitle.length,
+        contentLength: cleanedContentText.length
       });
 
       return {
-        title,
-        content
+        title: cleanedTitle || undefined,
+        content: cleanedContentText
       };
     } catch (error) {
       Logger.error('[LinkedIn] Error extracting article data:', error);
@@ -135,21 +321,81 @@ export class LinkedInDOMService {
     try {
       // Quill-Editor für normale Posts (nicht in Kommentar-Box)
       const shareBox = document.querySelector('[data-test-modal-id="sharebox"]');
-      const quillEditor = shareBox?.querySelector('[data-test-ql-editor-contenteditable="true"]') as HTMLElement;
-      const content = quillEditor?.innerText?.trim() || quillEditor?.textContent?.trim() || '';
+      let quillEditor: HTMLElement | null = null;
+      
+      // Verschiedene Selektoren für Post-Editor
+      const postEditorSelectors = [
+        '[data-test-ql-editor-contenteditable="true"]',
+        '.ql-editor[contenteditable="true"]',
+        '.ql-editor',
+        '[contenteditable="true"].ql-editor'
+      ];
+      
+      for (const selector of postEditorSelectors) {
+        const element = shareBox?.querySelector(selector) as HTMLElement;
+        if (element && element.offsetParent !== null) {
+          quillEditor = element;
+          Logger.info('[LinkedIn] Post editor found with selector:', selector);
+          break;
+        }
+      }
+      
+      let content = '';
+      if (quillEditor) {
+        content = quillEditor.innerText?.trim() || quillEditor.textContent?.trim() || '';
+        
+        // Falls leer, versuche aus <p> Tags zu extrahieren
+        if (!content || content === '' || content === '\n') {
+          const paragraphs = quillEditor.querySelectorAll('p');
+          if (paragraphs.length > 0) {
+            const extracted = Array.from(paragraphs)
+              .map(p => {
+                const text = p.textContent?.trim() || '';
+                if (text === '' && (p.innerHTML.trim() === '<br>' || p.innerHTML.trim() === '<br/>')) {
+                  return '';
+                }
+                return text;
+              })
+              .filter(p => p.length > 0)
+              .join('\n');
+            if (extracted) {
+              content = extracted;
+            }
+          }
+        }
+      }
 
       if (!content) {
         Logger.warn('[LinkedIn] No post data found');
         return null;
       }
 
+      if (!quillEditor) {
+        Logger.warn('[LinkedIn] No post editor found');
+        return null;
+      }
+
+      // DEBUG: Logge den rohen Content aus dem Eingabefeld
+      Logger.info('[LinkedIn] 🔍 RAW CONTENT from post editor:', {
+        rawContent: content,
+        contentLength: content.length,
+        innerText: quillEditor.innerText,
+        textContent: quillEditor.textContent,
+        innerHTML: quillEditor.innerHTML?.substring(0, 200) // Erste 200 Zeichen
+      });
+
+      // Bereinige Content
+      const cleanedContent = this.cleanContent(content);
+
       Logger.info('[LinkedIn] Post data extracted:', {
-        contentLength: content.length
+        rawContent: content,
+        cleanedContent: cleanedContent,
+        contentLength: cleanedContent.length
       });
 
       return {
         title: '', // Posts haben keinen Titel
-        content
+        content: cleanedContent
       };
     } catch (error) {
       Logger.error('[LinkedIn] Error extracting post data:', error);
@@ -346,6 +592,276 @@ export class LinkedInDOMService {
   }
 
   /**
+   * Extrahiert den Chat-Verlauf (letzte Nachrichten im Chat) mit Absender-Informationen
+   * Erkennt automatisch, welche Nachrichten vom aktuellen Benutzer stammen
+   */
+  static extractChatHistory(maxMessages: number = 10): string | null {
+    try {
+      // Selektoren für Chat-Nachrichten-Container
+      const messageContainerSelectors = [
+        '.msg-s-event-listitem',
+        '.msg-s-message-list-content .msg-s-event-listitem'
+      ];
+
+      const messages: Array<{sender: string, text: string, isFromCurrentUser: boolean}> = [];
+      
+      for (const containerSelector of messageContainerSelectors) {
+        const containers = document.querySelectorAll(containerSelector);
+        
+        for (const container of Array.from(containers)) {
+          const containerEl = container as HTMLElement;
+          if (!containerEl || containerEl.offsetParent === null) {
+            continue;
+          }
+          
+          // Prüfe ob Nachricht vom aktuellen Benutzer stammt
+          // LinkedIn verwendet verschiedene Indikatoren:
+          // 1. Klasse "msg-s-event-listitem--self" oder ähnlich
+          // 2. Fehlende Absender-Informationen (eigene Nachrichten haben oft keinen Absender-Namen)
+          // 3. "Gesendet" Indikator statt Absender-Name
+          // 4. Position im Layout (rechts für eigene Nachrichten)
+          const hasSentIndicator = 
+            containerEl.querySelector('[data-test-msg-cross-pillar-message-sending-indicator-presenter__sending-indicator--sent]') !== null ||
+            containerEl.querySelector('.msg-s-event-with-indicator__sending-indicator--sent') !== null ||
+            containerEl.querySelector('[title*="Gesendet"]') !== null ||
+            containerEl.querySelector('[title*="Sent"]') !== null;
+          
+          const hasSenderName = containerEl.querySelector('.msg-s-message-group__name') !== null;
+          
+          // Wenn "Gesendet" Indikator vorhanden ist ODER kein Absender-Name vorhanden ist = eigene Nachricht
+          const isFromCurrentUser = hasSentIndicator || !hasSenderName;
+          
+          // Extrahiere Absender-Name (nur wenn nicht vom aktuellen Benutzer)
+          let senderName = '';
+          if (!isFromCurrentUser) {
+            const senderSelectors = [
+              '.msg-s-message-group__name',
+              '.msg-s-message-group__profile-link',
+              '.msg-s-event-listitem__link[href*="/in/"]',
+              'a[href*="/in/"] .msg-s-message-group__profile-link',
+              '.msg-s-event-listitem__link img[alt]',
+              '[aria-label*="Profil von"]'
+            ];
+            
+            for (const senderSelector of senderSelectors) {
+              const senderElement = containerEl.querySelector(senderSelector);
+              if (senderElement) {
+                // Versuche Text aus verschiedenen Quellen zu extrahieren
+                let senderText = senderElement.textContent?.trim() || 
+                                senderElement.getAttribute('aria-label')?.trim() ||
+                                (senderElement as HTMLElement).title?.trim() ||
+                                '';
+                
+                // Prüfe auch img alt-Attribute
+                if (!senderText && senderElement.tagName === 'IMG') {
+                  senderText = (senderElement as HTMLImageElement).alt?.trim() || '';
+                }
+                
+                // Prüfe ob es ein Name ist (mehrere Wörter oder ein einzelnes Wort)
+                if (senderText && senderText.length > 1 && senderText.length < 100) {
+                  // Entferne "Profil von" Präfix falls vorhanden
+                  senderText = senderText.replace(/^Profil von\s+/i, '').trim();
+                  // Entferne "anzeigen" Suffix falls vorhanden
+                  senderText = senderText.replace(/\s+anzeigen$/i, '').trim();
+                  // Entferne "Profil" alleinstehend
+                  if (senderText && !senderText.match(/^(Profil|Bild|Foto)$/i)) {
+                    senderName = senderText;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Extrahiere Nachrichtentext
+          const messageSelectors = [
+            '.msg-s-event-listitem__body',
+            '.msg-s-event-listitem__message-bubble p',
+            '.msg-s-event-listitem__content p',
+            'p.msg-s-event-listitem__body',
+            '.msg-s-event-listitem__content'
+          ];
+          
+          let messageText = '';
+          for (const messageSelector of messageSelectors) {
+            const messageElement = containerEl.querySelector(messageSelector);
+            if (messageElement) {
+              messageText = messageElement.textContent?.trim() || 
+                           (messageElement as HTMLElement).innerText?.trim() || '';
+              if (messageText && messageText.length >= 2) {
+                break;
+              }
+            }
+          }
+          
+          // Nur relevante Nachrichten (mindestens 2 Zeichen)
+          if (messageText && messageText.length >= 2) {
+            // Prüfe ob diese Nachricht bereits vorhanden ist (vergleiche Text)
+            const isDuplicate = messages.some(msg => msg.text === messageText);
+            if (!isDuplicate) {
+              messages.push({
+                sender: senderName,
+                text: messageText,
+                isFromCurrentUser
+              });
+              if (messages.length >= maxMessages) {
+                break;
+              }
+            }
+          }
+        }
+        
+        if (messages.length >= maxMessages) {
+          break;
+        }
+      }
+
+      if (messages.length === 0) {
+        Logger.warn('[LinkedIn] No chat history found');
+        return null;
+      }
+
+      // Erstelle einen lesbaren Chat-Verlauf mit Absendern (chronologisch, älteste zuerst)
+      const reversedMessages = messages.reverse();
+      const chatHistory = reversedMessages.map(msg => {
+        // Wenn vom aktuellen Benutzer: "Du: Nachricht"
+        // Wenn von anderer Person: "Absender: Nachricht"
+        // Wenn Absender unbekannt: "Unbekannt: Nachricht"
+        if (msg.isFromCurrentUser) {
+          return `Du: ${msg.text}`;
+        } else if (msg.sender && msg.sender.length > 0) {
+          return `${msg.sender}: ${msg.text}`;
+        } else {
+          return `Unbekannt: ${msg.text}`;
+        }
+      }).join('\n\n');
+
+      Logger.info('[LinkedIn] Chat history extracted:', {
+        messageCount: messages.length,
+        totalLength: chatHistory.length,
+        preview: chatHistory.substring(0, 300),
+        senders: messages.map(m => m.isFromCurrentUser ? 'Du' : (m.sender || 'Unbekannt')).filter((v, i, a) => a.indexOf(v) === i),
+        fromCurrentUser: messages.filter(m => m.isFromCurrentUser).length,
+        fromOthers: messages.filter(m => !m.isFromCurrentUser).length
+      });
+
+      return chatHistory.substring(0, 2000); // Maximal 2000 Zeichen für den Kontext
+    } catch (error) {
+      Logger.error('[LinkedIn] Error extracting chat history:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Extrahiert Chat-Nachrichten-Daten aus dem Editor
+   */
+  static extractChatMessage(editorElement?: HTMLElement | null): LinkedInArticle | null {
+    try {
+      let chatEditor: HTMLElement | null = null;
+
+      // Wenn ein Editor-Element übergeben wurde, verwende dieses
+      if (editorElement) {
+        chatEditor = editorElement;
+      } else {
+        // Suche nach Chat-Editor
+        const selectors = [
+          '.msg-form__contenteditable',
+          '.msg-send-form [contenteditable="true"]',
+          '.msg-form__texteditor [contenteditable="true"]',
+          '.msg-form__contenteditable[contenteditable="true"]',
+          '[data-test-msg-form__contenteditable]',
+          '.msg-form__contenteditable[role="textbox"]',
+          '.msg-form [contenteditable="true"]',
+          '.msg-form__editor [contenteditable="true"]',
+          '.msg-form__editor div[contenteditable="true"]'
+        ];
+
+        for (const selector of selectors) {
+          const elements = document.querySelectorAll(selector);
+          for (const element of Array.from(elements)) {
+            const el = element as HTMLElement;
+            if (el && 
+                el.getAttribute('aria-hidden') !== 'true' &&
+                el.offsetParent !== null) {
+              chatEditor = el;
+              Logger.info('[LinkedIn] Chat editor found for extraction with selector:', selector);
+              break;
+            }
+          }
+          if (chatEditor) break;
+        }
+      }
+
+      if (!chatEditor) {
+        Logger.warn('[LinkedIn] No chat editor found');
+        return null;
+      }
+
+      // Extrahiere Content aus dem Chat-Editor
+      let content = '';
+      
+      // Methode 1: innerText (bevorzugt)
+      if (chatEditor.innerText) {
+        content = chatEditor.innerText.trim();
+      }
+      
+      // Methode 2: textContent (Fallback)
+      if (!content && chatEditor.textContent) {
+        content = chatEditor.textContent.trim();
+      }
+      
+      // Methode 3: Aus <p> Tags extrahieren (für Quill-Editoren)
+      if (!content || content === '' || content === '\n') {
+        const paragraphs = chatEditor.querySelectorAll('p');
+        if (paragraphs.length > 0) {
+          const extracted = Array.from(paragraphs)
+            .map(p => {
+              // Extrahiere Text aus <p> Tags, ignoriere <br> und leere Tags
+              const text = p.textContent?.trim() || '';
+              // Wenn der Paragraph nur ein <br> enthält, ist er leer
+              if (text === '' && p.innerHTML.trim() === '<br>') {
+                return '';
+              }
+              return text;
+            })
+            .filter(p => p.length > 0)
+            .join('\n');
+          if (extracted) {
+            content = extracted;
+          }
+        }
+      }
+
+      // DEBUG: Logge den rohen Content aus dem Eingabefeld
+      Logger.info('[LinkedIn] 🔍 RAW CONTENT from chat editor:', {
+        rawContent: content,
+        contentLength: content.length,
+        innerText: chatEditor.innerText,
+        textContent: chatEditor.textContent,
+        innerHTML: chatEditor.innerHTML?.substring(0, 200) // Erste 200 Zeichen
+      });
+
+      // Bereinige Content
+      const cleanedContent = this.cleanContent(content);
+
+      Logger.info('[LinkedIn] Chat message extracted:', {
+        rawContent: content,
+        cleanedContent: cleanedContent,
+        contentLength: cleanedContent.length,
+        preview: cleanedContent.substring(0, 50)
+      });
+
+      return {
+        title: '', // Chat-Nachrichten haben keinen Titel
+        content: cleanedContent
+      };
+    } catch (error) {
+      Logger.error('[LinkedIn] Error extracting chat message:', error);
+      return null;
+    }
+  }
+
+  /**
    * Extrahiert Kommentar-Daten aus dem Kommentar-Editor
    */
   static extractCommentData(): LinkedInArticle | null {
@@ -406,29 +922,72 @@ export class LinkedInDOMService {
       }
       
       // Methode 3: Aus den <p> Tags extrahieren (für Quill-Editor)
-      if (!content) {
+      // Wichtig: Auch wenn innerText/textContent leer ist, könnte Text in <p> Tags sein
+      if (!content || content === '' || content === '\n') {
         const paragraphs = quillEditor.querySelectorAll('p');
         if (paragraphs.length > 0) {
-          content = Array.from(paragraphs)
-            .map(p => p.textContent?.trim() || '')
+          const extracted = Array.from(paragraphs)
+            .map(p => {
+              // Extrahiere Text aus <p> Tags, ignoriere <br> und leere Tags
+              const text = p.textContent?.trim() || '';
+              // Wenn der Paragraph nur ein <br> enthält, ist er leer
+              if (text === '' && (p.innerHTML.trim() === '<br>' || p.innerHTML.trim() === '<br/>')) {
+                return '';
+              }
+              return text;
+            })
             .filter(p => p.length > 0)
             .join('\n');
+          if (extracted) {
+            content = extracted;
+          }
+        }
+      }
+      
+      // Methode 4: Direkt aus innerHTML extrahieren (falls Text in anderen Tags ist)
+      if (!content || content === '' || content === '\n') {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = quillEditor.innerHTML || '';
+        const extracted = tempDiv.textContent?.trim() || tempDiv.innerText?.trim() || '';
+        if (extracted && extracted !== '\n' && extracted.length > 0) {
+          content = extracted;
         }
       }
 
-      if (!content) {
-        Logger.warn('[LinkedIn] No comment content found in editor');
-        return null;
+      // Wenn immer noch kein Content, aber Editor existiert, logge das
+      if (!content || content === '' || content === '\n') {
+        Logger.warn('[LinkedIn] No comment content found in editor', {
+          innerText: quillEditor.innerText,
+          textContent: quillEditor.textContent,
+          innerHTML: quillEditor.innerHTML?.substring(0, 200),
+          selector: 'comment editor'
+        });
+        // Erlaube leeren Content, damit --du/--sie auch in leeren Editoren erkannt werden kann
+        // return null; // Entfernt - erlaube leeren Content
       }
 
-      Logger.info('[LinkedIn] Comment data extracted:', {
+      // DEBUG: Logge den rohen Content aus dem Eingabefeld
+      Logger.info('[LinkedIn] 🔍 RAW CONTENT from comment editor:', {
+        rawContent: content,
         contentLength: content.length,
-        preview: content.substring(0, 50)
+        innerText: quillEditor.innerText,
+        textContent: quillEditor.textContent,
+        innerHTML: quillEditor.innerHTML?.substring(0, 200) // Erste 200 Zeichen
+      });
+
+      // Bereinige Content
+      const cleanedContent = this.cleanContent(content);
+
+      Logger.info('[LinkedIn] Comment data extracted:', {
+        rawContent: content,
+        cleanedContent: cleanedContent,
+        contentLength: cleanedContent.length,
+        preview: cleanedContent.substring(0, 50)
       });
 
       return {
         title: '', // Kommentare haben keinen Titel
-        content
+        content: cleanedContent
       };
     } catch (error) {
       Logger.error('[LinkedIn] Error extracting comment data:', error);

@@ -1,6 +1,6 @@
 {
   "name": "chrome-on-steroids",
-  "version": "1.0.0",
+  "version": "0.0.185",
   "description": "AI-powered browser automation for freelancermap.de and kleinanzeigen.de",
   "author": "Martin Pfeffer | celox.io",
   "license": "MIT",
@@ -33,4 +33,3 @@
     "webpack-cli": "^5.1.4"
   }
 }
-
