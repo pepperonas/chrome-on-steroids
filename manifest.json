@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chrome On Steroids",
-  "version": "0.0.185",
+  "version": "0.0.194",
   "description": "AI-powered browser automation: Auto-generate cover letters for freelancermap.de, optimize product listings for kleinanzeigen.de, and automated purchase inquiries",
   "permissions": [
     "storage",
