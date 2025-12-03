@@ -1,6 +1,6 @@
 # Chrome On Steroids 🚀
 
-**AI-powered browser automation for freelancermap.de and kleinanzeigen.de**
+**AI-powered browser automation for freelancermap.de, kleinanzeigen.de, and LinkedIn**
 
 Supercharge your Chrome browser with intelligent automation powered by ChatGPT and Claude AI.
 
@@ -31,6 +31,17 @@ Supercharge your Chrome browser with intelligent automation powered by ChatGPT a
 - **"Direct Buy" integration** - mentions secure payment when enabled
 - **Supports both "Offer" and "Wanted" listings**
 
+### 💼 LinkedIn Integration
+- **AI-powered content optimization** for articles, posts, and comments
+- **Article optimization** - optimize title and content with professional formatting
+- **Post optimization** - enhance your LinkedIn posts for better engagement
+- **Comment optimization** - craft concise, valuable comments
+- **Configurable styling** - bold, italic, code blocks, quotes
+- **Highlighting intensity** - control formatting density (low, medium, high)
+- **Title optimization** - optional separate title/headline optimization for articles
+- **Markdown to HTML conversion** - automatic formatting for LinkedIn's rich text editor
+- **Smart language preservation** - maintains original language (no translation)
+
 ### 🤖 AI Integration
 - ✅ **ChatGPT** (OpenAI) and **Claude** (Anthropic) support
 - ✅ Separate API keys for both providers
@@ -48,7 +59,7 @@ Supercharge your Chrome browser with intelligent automation powered by ChatGPT a
 
 ### 🛠️ Technical
 - ✅ TypeScript with SOLID principles
-- ✅ Modular architecture (FreelancerMap, Kleinanzeigen, Shared)
+- ✅ Modular architecture (FreelancerMap, Kleinanzeigen, LinkedIn, Shared)
 - ✅ Webpack for optimal bundling
 - ✅ Automatic versioning (patch increment on build)
 - ✅ Chrome Storage API for settings
@@ -155,6 +166,20 @@ The popup uses an **accordion UI** to organize settings by platform:
      - ☑️ Shipping available (with optional cost)
    - **Warranty Disclaimer** (enabled by default)
 
+#### 💼 LinkedIn Einstellungen (Accordion)
+
+**Article Optimization:**
+1. Expand **"LinkedIn Einstellungen"** accordion
+2. Configure optimization options:
+   - **☑️ Titel/Headline auch optimieren** (default: enabled)
+     - When enabled, AI optimizes article title separately
+   - **☑️ Formatierung verwenden** (default: enabled)
+     - Enables Markdown formatting (bold, italic, code, quotes)
+   - **Highlighting-Intensität:**
+     - **Niedrig** - Sparsely uses formatting (2-3 per paragraph)
+     - **Mittel** - Balanced formatting (3-5 per paragraph) - default
+     - **Hoch** - Intensive formatting for lively text
+
 ---
 
 ### 2. FreelancerMap: Generate Cover Letters
@@ -258,6 +283,84 @@ Rücknahme anbieten.
 
 ---
 
+### 5. LinkedIn: Optimize Your Content
+
+#### Articles
+1. **Navigate to LinkedIn**
+2. **Click "Write article"** or go to `https://www.linkedin.com/article/new/`
+3. **Fill in title and content** (can be brief)
+4. **Look for the "💎 Mit AI optimieren" button** in the toolbar
+5. **Click the button** - AI will optimize both title and content
+6. **Review and publish** your article
+
+**Features:**
+- ✅ **Title optimization** - Creates engaging, click-worthy headlines (if enabled)
+- ✅ **Content optimization** - Professional structure with hooks, examples, and CTAs
+- ✅ **Markdown formatting** - Bold, italic, code blocks, quotes (if enabled)
+- ✅ **Language preservation** - Maintains original language (no translation)
+- ✅ **LinkedIn best practices** - Optimized for engagement and reach
+
+#### Posts
+1. **Navigate to LinkedIn feed**
+2. **Click "Start a post"** to open the share box
+3. **Type your post content** (can be brief)
+4. **Look for the "💎 Mit AI optimieren" button** next to "Post" button
+5. **Click the button** - AI will optimize your post
+6. **Review and post** your content
+
+**Features:**
+- ✅ **Engagement optimization** - Hooks, questions, hashtags
+- ✅ **Professional formatting** - Bold, italic, code (if enabled)
+- ✅ **Hashtag integration** - Automatically adds relevant hashtags
+- ✅ **Call-to-action** - Encourages comments and engagement
+
+#### Comments
+1. **Navigate to any LinkedIn post**
+2. **Click "Comment"** to open comment editor
+3. **Type your comment** (can be brief)
+4. **Look for the "💎 Optimieren" button** next to "Kommentieren" button
+5. **Click the button** - AI will optimize your comment
+6. **Review and post** your comment
+
+**Features:**
+- ✅ **Concise optimization** - Short, valuable comments (2-3 sentences)
+- ✅ **Professional tone** - Respectful and constructive
+- ✅ **Value-focused** - Adds real insights, not fluff
+- ✅ **No hashtags** - Comments don't include hashtags
+
+**Example Optimized Article:**
+```
+[Optimized Title: "5 Fehler, die 90% der Entwickler beim Code-Review machen"]
+
+[Optimized Content with formatting:]
+**Warum Code-Reviews so wichtig sind**
+
+In meiner 10-jährigen Erfahrung als Entwickler habe ich unzählige Code-Reviews durchgeführt. Dabei fällt mir immer wieder auf: Die gleichen Fehler werden immer wieder gemacht.
+
+**Die 5 häufigsten Fehler:**
+
+1. **Zu oberflächliche Reviews** - "Looks good" ist kein Review
+2. **Fehlende Kontext-Fragen** - Warum wurde das so gelöst?
+3. **Keine Tests** - Code ohne Tests ist wie Autofahren ohne Bremsen
+4. **Persönliche Angriffe** - Kritik am Code, nicht an der Person
+5. **Keine Follow-ups** - Reviews enden nicht mit dem Merge
+
+**Was macht ein gutes Code-Review aus?**
+
+> "Ein Code-Review sollte den Code verbessern, nicht den Entwickler demütigen."
+
+Konstruktive Kritik, klare Verbesserungsvorschläge und Respekt für die Arbeit des anderen - das sind die Grundpfeiler eines erfolgreichen Reviews.
+
+**Fazit:**
+Code-Reviews sind keine lästige Pflicht, sondern eine Chance, gemeinsam besseren Code zu schreiben. Nutzt diese Chance!
+
+Was sind eure Erfahrungen mit Code-Reviews? Lasst uns in den Kommentaren diskutieren!
+
+#SoftwareDevelopment #CodeReview #BestPractices
+```
+
+---
+
 ## 🔧 Configuration Files
 
 ### API Keys
@@ -284,6 +387,11 @@ Rücknahme anbieten.
 - Discount Value (default: 15)
 - Custom Message Template (optional)
 
+### LinkedIn Settings
+- Optimize Title (default: enabled) - Optimize article title separately
+- Use Styling (default: enabled) - Enable Markdown formatting
+- Highlighting Intensity (low, medium, high) - Control formatting density
+
 ---
 
 ## 📊 Export & Import
@@ -300,6 +408,7 @@ Rücknahme anbieten.
 - ✅ User profile (FreelancerMap)
 - ✅ Kleinanzeigen settings (discount, message template)
 - ✅ Seller settings (name, address, shipping)
+- ✅ LinkedIn settings (title optimization, styling, highlighting intensity)
 - ✅ **Future settings automatically included** (custom prompts, themes, etc.)
 
 **Export format v2.0:**
@@ -352,6 +461,10 @@ chrome-on-steroids/
 │   │   │   ├── content-script.ts   # Button injection & handling
 │   │   │   ├── services/           # DOM, message gen, optimizer
 │   │   │   └── models/             # Product & seller interfaces
+│   │   ├── linkedin/               # LinkedIn module
+│   │   │   ├── content-script.ts   # Button injection & handling
+│   │   │   ├── services/           # DOM, article optimizer, markdown converter
+│   │   │   └── models/             # Article & settings interfaces
 │   │   └── shared/                 # Shared code
 │   │       ├── services/           # AI, Storage, Logging
 │   │       ├── models/             # Common interfaces
@@ -511,7 +624,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 📈 Roadmap
 
-- [ ] **LinkedIn** - Bewerbungen, Networking
+- [x] **LinkedIn** - Artikel, Posts, Kommentare optimieren ✅
 - [ ] **Google Forms** - universell einsetzbar
 - [ ] Support for more job platforms
 - [ ] Support for more marketplace platforms
@@ -540,6 +653,14 @@ MIT License - see [LICENSE](LICENSE) file for details
 - **Add photos** before optimizing description
 - **Enable "Direct Buy"** for faster sales
 - **Use warranty disclaimer** for legal protection
+
+### LinkedIn
+- **Optimize articles** for better reach and engagement
+- **Use medium highlighting** for balanced formatting
+- **Enable title optimization** for click-worthy headlines
+- **Review optimized content** before publishing
+- **Add personal stories** to make content authentic
+- **Engage with comments** - optimized comments drive discussions
 
 ---
 
