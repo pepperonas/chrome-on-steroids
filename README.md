@@ -476,7 +476,8 @@ chrome-on-steroids/
 │   ├── popup/
 │   │   ├── popup.html              # Settings UI
 │   │   ├── popup.ts                # Settings logic
-│   │   └── popup-extended.ts       # Kleinanzeigen settings
+│   │   ├── popup-extended.ts       # Kleinanzeigen settings
+│   │   └── popup-linkedin.ts       # LinkedIn settings
 │   └── overlay/
 │       └── overlay.ts              # Loading overlay
 ├── dist/                           # Built extension
