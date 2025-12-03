@@ -7,6 +7,7 @@ import { UserProfile } from '../shared/models/UserProfile';
 import { CONSTANTS } from '../shared/utils/constants';
 import { Logger } from '../shared/utils/logger';
 import { KleinanzeigenPopupExtension } from './popup-extended';
+import { LinkedInPopupExtension } from './popup-linkedin';
 
 /**
  * Popup Controller für Einstellungen
@@ -23,6 +24,7 @@ class PopupController {
     await this.loadLogStats();
     await KleinanzeigenPopupExtension.loadKleinanzeigenSettings();
     await KleinanzeigenPopupExtension.loadSellerSettings();
+    await LinkedInPopupExtension.loadLinkedInSettings();
     this.attachEventListeners();
     KleinanzeigenPopupExtension.attachEventListeners();
   }
@@ -411,6 +413,9 @@ class PopupController {
       // Speichere Verkäufer-Einstellungen
       await KleinanzeigenPopupExtension.saveSellerSettings();
 
+      // Speichere LinkedIn-Einstellungen
+      await LinkedInPopupExtension.saveLinkedInSettings();
+
       // Aktualisiere den Active-Badge
       this.updateActiveBadge(this.currentProvider);
 
@@ -447,6 +452,9 @@ class PopupController {
       
       // Reset Verkäufer-Einstellungen
       await KleinanzeigenPopupExtension.resetSellerSettings();
+
+      // Reset LinkedIn-Einstellungen
+      await StorageService.remove('linkedin_settings');
 
       this.showStatus('Einstellungen zurückgesetzt', 'success');
     }
@@ -593,6 +601,8 @@ class PopupController {
       await this.loadSettings();
       await KleinanzeigenPopupExtension.loadKleinanzeigenSettings();
       await KleinanzeigenPopupExtension.loadSellerSettings();
+      await LinkedInPopupExtension.loadLinkedInSettings();
+      await LinkedInPopupExtension.loadLinkedInSettings();
 
       this.showStatus(`${importedCount} Einstellungen importiert ✓`, 'success');
       Logger.info('Settings imported successfully', {

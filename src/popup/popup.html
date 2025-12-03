@@ -215,6 +215,56 @@
         </div>
       </section>
       
+      <!-- LinkedIn Einstellungen (Accordion) -->
+      <section class="settings-section accordion-section">
+        <button class="accordion-header" type="button" data-target="linkedin-settings">
+          <span class="accordion-title">
+            <span class="accordion-icon">💼</span>
+            LinkedIn Einstellungen
+          </span>
+          <span class="accordion-chevron">▼</span>
+        </button>
+        <div class="accordion-content" id="linkedin-settings">
+          <p class="section-description">
+            Konfiguriere die Optimierung für LinkedIn-Artikel, Posts und Kommentare
+          </p>
+
+          <h3>Artikel-Optimierung</h3>
+          
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="linkedin-optimize-title" checked>
+              <span>Titel/Headline auch optimieren</span>
+            </label>
+            <small class="form-hint">
+              Wenn aktiviert, wird auch der Titel des Artikels mit KI optimiert
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="linkedin-use-styling" checked>
+              <span>Styling verwenden (fett, kursiv, Code, Zitate)</span>
+            </label>
+            <small class="form-hint">
+              Wenn aktiviert, werden Formatierungen wie **fett**, *kursiv*, `Code` und Zitate verwendet
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="linkedin-highlighting-intensity">Highlighting-Intensität</label>
+            <select id="linkedin-highlighting-intensity">
+              <option value="low">Niedrig - Minimal (nur wichtige Begriffe)</option>
+              <option value="medium" selected>Mittel - Ausgewogen (Standard)</option>
+              <option value="high">Hoch - Intensiv (viele Formatierungen)</option>
+            </select>
+            <small class="form-hint">
+              Bestimmt, wie intensiv Formatierungen (fett, kursiv) im Artikel verwendet werden
+            </small>
+          </div>
+        </div>
+      </section>
+      
       <!-- Generierungs-Logs -->
       <section class="settings-section">
         <h2>Generierungs-Logs</h2>
