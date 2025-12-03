@@ -85,10 +85,17 @@ class LinkedInContentScript {
   private observeCommentEditors(): void {
     // Prüfe initial ob Kommentar-Editor bereits sichtbar ist
     const checkInitial = () => {
-      if (LinkedInDOMService.isCommentEditorVisible() && !this.commentOptimizeButton) {
-        setTimeout(() => {
-          this.createCommentOptimizeButton();
-        }, 300);
+      const isVisible = LinkedInDOMService.isCommentEditorVisible();
+      const hasButton = this.commentOptimizeButton && document.body.contains(this.commentOptimizeButton);
+      
+      Logger.info('[LinkedIn] Checking comment editor:', { isVisible, hasButton });
+      
+      if (isVisible && !hasButton) {
+        Logger.info('[LinkedIn] Comment editor visible, creating button...');
+        // Versuche mehrfach mit verschiedenen Delays
+        setTimeout(() => this.createCommentOptimizeButton(), 100);
+        setTimeout(() => this.createCommentOptimizeButton(), 500);
+        setTimeout(() => this.createCommentOptimizeButton(), 1000);
       }
     };
     
@@ -97,16 +104,23 @@ class LinkedInContentScript {
     setTimeout(checkInitial, 500);
     setTimeout(checkInitial, 1000);
     setTimeout(checkInitial, 2000);
+    setTimeout(checkInitial, 3000);
 
     // Beobachte Änderungen für Kommentar-Editoren
     this.commentObserver = new MutationObserver(() => {
-      if (LinkedInDOMService.isCommentEditorVisible() && !this.commentOptimizeButton) {
-        setTimeout(() => {
-          this.createCommentOptimizeButton();
-        }, 300);
-      } else if (!LinkedInDOMService.isCommentEditorVisible() && this.commentOptimizeButton) {
+      const isVisible = LinkedInDOMService.isCommentEditorVisible();
+      const hasButton = this.commentOptimizeButton && document.body.contains(this.commentOptimizeButton);
+      
+      if (isVisible && !hasButton) {
+        Logger.info('[LinkedIn] Comment editor became visible, creating button...');
+        // Versuche mehrfach mit verschiedenen Delays
+        setTimeout(() => this.createCommentOptimizeButton(), 100);
+        setTimeout(() => this.createCommentOptimizeButton(), 500);
+        setTimeout(() => this.createCommentOptimizeButton(), 1000);
+      } else if (!isVisible && this.commentOptimizeButton) {
         // Prüfe ob Button noch im DOM ist, bevor wir ihn zurücksetzen
         if (!document.body.contains(this.commentOptimizeButton)) {
+          Logger.info('[LinkedIn] Comment editor closed, resetting button');
           this.commentOptimizeButton = null;
         }
       }
@@ -160,7 +174,7 @@ class LinkedInContentScript {
       <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
       </svg>
-      <span>💎 Mit AI optimieren</span>
+      <span>💎 Optimieren</span>
     `;
     button.style.display = 'flex';
     button.style.alignItems = 'center';
@@ -209,7 +223,7 @@ class LinkedInContentScript {
       <svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
       </svg>
-      <span>💎 Mit AI optimieren</span>
+      <span>💎 Optimieren</span>
     `;
     button.style.display = 'flex';
     button.style.alignItems = 'center';
@@ -235,18 +249,24 @@ class LinkedInContentScript {
    */
   private createCommentOptimizeButton(): void {
     if (this.commentOptimizeButton && document.body.contains(this.commentOptimizeButton)) {
+      Logger.info('[LinkedIn] Comment optimize button already exists in DOM');
       return; // Button bereits vorhanden und im DOM
     }
 
+    Logger.info('[LinkedIn] Creating comment optimize button...');
     const container = LinkedInDOMService.getCommentOptimizeButtonContainer();
     if (!container) {
       Logger.warn('[LinkedIn] Could not find comment button container');
       return;
     }
 
+    Logger.info('[LinkedIn] Comment button container found:', container);
+
     // Prüfe ob Button bereits im Container existiert
-    if (container.querySelector('.cos-comment-optimize-btn')) {
-      this.commentOptimizeButton = container.querySelector('.cos-comment-optimize-btn') as HTMLElement;
+    const existingButton = container.querySelector('.cos-comment-optimize-btn');
+    if (existingButton) {
+      Logger.info('[LinkedIn] Comment optimize button already exists in container');
+      this.commentOptimizeButton = existingButton as HTMLElement;
       return;
     }
 
@@ -259,13 +279,14 @@ class LinkedInContentScript {
       </svg>
       <span>💎 Optimieren</span>
     `;
-    button.style.display = 'flex';
+    button.style.display = 'inline-flex';
     button.style.alignItems = 'center';
     button.style.gap = '4px';
     button.style.cursor = 'pointer';
     button.style.fontSize = '13px';
     button.style.padding = '6px 12px';
-    button.style.marginLeft = '8px';
+    button.style.marginRight = '8px';
+    button.style.verticalAlign = 'middle';
     button.title = 'Kommentar mit KI optimieren';
 
     button.addEventListener('click', (e) => {
@@ -274,10 +295,21 @@ class LinkedInContentScript {
       this.handleCommentOptimizeClick();
     });
 
-    container.appendChild(button);
+    // Füge den Button direkt VOR dem Submit-Button ein (falls vorhanden)
+    const submitButton = container.querySelector('.comments-comment-box__submit-button--cr, .comments-comment-box__submit-button, button[class*="primary"]');
+    if (submitButton && submitButton.parentElement === container) {
+      container.insertBefore(button, submitButton);
+    } else {
+      container.appendChild(button);
+    }
     this.commentOptimizeButton = button;
 
-    Logger.info('[LinkedIn] Comment optimize button created and added to container');
+    Logger.info('[LinkedIn] Comment optimize button created and added to container', {
+      container: container.className,
+      buttonInDOM: document.body.contains(button),
+      containerInDOM: document.body.contains(container),
+      buttonVisible: button.offsetParent !== null
+    });
   }
 
   /**
@@ -318,10 +350,6 @@ class LinkedInContentScript {
         <span>KI arbeitet...</span>
       `;
 
-      // Lade LinkedIn-Einstellungen
-      const linkedInSettings = await StorageService.load<LinkedInSettings>('linkedin_settings');
-      const useStyling = linkedInSettings?.useStyling !== false; // Default: true
-
       const optimizedContent = await ArticleOptimizer.optimizeArticle(post, 'post');
 
       Logger.info('[LinkedIn] Post optimized:', {
@@ -329,8 +357,8 @@ class LinkedInContentScript {
         optimizedLength: optimizedContent.length
       });
 
-      // Füge optimierten Content ein (type = 'post' für normale Posts, mit Styling)
-      const inserted = LinkedInDOMService.insertOptimizedContent(optimizedContent, 'post', useStyling);
+      // Füge optimierten Content ein (type = 'post', ohne Formatierung)
+      const inserted = LinkedInDOMService.insertOptimizedContent(optimizedContent, 'post', false);
       if (!inserted) {
         throw new Error('Content konnte nicht eingefügt werden. Bitte versuche es erneut.');
       }
@@ -432,10 +460,6 @@ class LinkedInContentScript {
         <span>KI arbeitet...</span>
       `;
 
-      // Lade LinkedIn-Einstellungen
-      const linkedInSettings = await StorageService.load<LinkedInSettings>('linkedin_settings');
-      const useStyling = linkedInSettings?.useStyling !== false; // Default: true
-
       const optimizedContent = await ArticleOptimizer.optimizeArticle(comment, 'comment');
 
       Logger.info('[LinkedIn] Comment optimized:', {
@@ -443,8 +467,8 @@ class LinkedInContentScript {
         optimizedLength: optimizedContent.length
       });
 
-      // Füge optimierten Content ein (type = 'comment', mit Styling)
-      const inserted = LinkedInDOMService.insertOptimizedContent(optimizedContent, 'comment', useStyling);
+      // Füge optimierten Content ein (type = 'comment', ohne Formatierung)
+      const inserted = LinkedInDOMService.insertOptimizedContent(optimizedContent, 'comment', false);
       if (!inserted) {
         throw new Error('Kommentar konnte nicht eingefügt werden. Bitte versuche es erneut.');
       }

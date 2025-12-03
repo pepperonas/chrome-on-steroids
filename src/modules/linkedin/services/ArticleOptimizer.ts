@@ -140,6 +140,8 @@ Der Titel sollte direkt verwendbar sein.`;
    * Erstellt den Optimierungs-Prompt
    */
   private static buildPrompt(article: LinkedInArticle, type: 'article' | 'post' | 'comment' = 'article', useStyling: boolean = true, highlightingIntensity: 'low' | 'medium' | 'high' = 'medium'): string {
+    // Formatierung nur für Artikel verwenden
+    const shouldUseStyling = type === 'article' && useStyling;
     const contentType = type === 'comment' ? 'Kommentar' : type === 'post' ? 'Beitrag' : 'Artikel';
     const maxLength = type === 'comment' ? '500' : type === 'post' ? '2000' : '3000';
     
@@ -186,7 +188,7 @@ ${type === 'comment' ? `- ✅ **Kurz und prägnant** - max. 2-3 Sätze
 - ✅ **Wertvolle Insights** - teile Wissen, nicht nur Meinungen
 - ✅ **Hashtags** - am Ende 3-5 relevante Hashtags (nur bei Posts/Artikeln)`}
 
-${useStyling ? `### Formatierung (WICHTIG):
+${shouldUseStyling ? `### Formatierung (WICHTIG):
 Verwende Markdown-Formatierung für bessere Lesbarkeit:
 - **Fett** für wichtige Begriffe: \`**Text**\`
 - *Kursiv* für Betonung: \`*Text*\`
